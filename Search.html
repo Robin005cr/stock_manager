@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f7fb;
+      color: #333;
+      padding: 24px;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      padding: 28px;
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 18px;
+    }
+    .row {
+      display: grid;
+      gap: 16px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .action-row {
+      display: grid;
+      grid-template-columns: 220px auto;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 20px;
+    }
+    .action-row button {
+      width: auto;
+      min-width: 150px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    input,
+    select,
+    button {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #bfc9d9;
+      border-radius: 6px;
+      font-size: 15px;
+      box-sizing: border-box;
+      background: #fdfdff;
+    }
+    button {
+      background: #2979ff;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    button:hover {
+      background: #1c5ed6;
+    }
+    .results {
+      margin-top: 24px;
+    }
+    .results table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .results th,
+    .results td {
+      text-align: left;
+      padding: 12px 10px;
+      border: 1px solid #e4e9f0;
+    }
+    .results th {
+      background: #f1f5fb;
+    }
+    .no-results {
+      padding: 18px;
+      background: #fff4f4;
+      border: 1px solid #f1c0c0;
+      border-radius: 8px;
+      color: #8a2f2f;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Search Inventory</h1>
+    <form id="searchForm">
+      <div class="form-grid">
+        <div>
+          <label for="searchInput">Search Product</label>
+          <input type="search" id="searchInput" name="searchInput" placeholder="Search by product, category, or company" />
+        </div>
+        <div>
+          <label for="measurementFilter">Measurement</label>
+          <select id="measurementFilter" name="measurementFilter">
+            <option value="">Any</option>
+          </select>
+        </div>
+        <div>
+          <label for="companyFilter">Company</label>
+          <select id="companyFilter" name="companyFilter">
+            <option value="">Any</option>
+          </select>
+        </div>
+        <div>
+          <label for="categoryFilter">Category</label>
+          <select id="categoryFilter" name="categoryFilter">
+            <option value="">Any</option>
+          </select>
+        </div>
+        <div>
+          <label for="quantityFilter">Quantity</label>
+          <select id="quantityFilter" name="quantityFilter">
+            <option value="">Any</option>
+          </select>
+        </div>
+        <div>
+          <label for="godownFilter">Godown</label>
+          <select id="godownFilter" name="godownFilter">
+            <option value="">Any</option>
+          </select>
+        </div>
+        <div>
+          <label for="dateFilter">Date of Load</label>
+          <input type="date" id="dateFilter" name="dateFilter" />
+        </div>
+      </div>
+      <button type="submit">Search</button>
+    </form>
+    <div class="action-row">
+      <div>
+        <label for="exportFormat">Export Format</label>
+        <select id="exportFormat" name="exportFormat">
+          <option value="csv">CSV</option>
+          <option value="excel">Excel</option>
+          <option value="pdf">PDF</option>
+        </select>
+      </div>
+      <button type="button" id="exportButton">Export</button>
+    </div>
+    <div class="results" id="resultsContainer"></div>
+  </div>
+  <script src="Search.js"></script>
+</body>
+</html>
