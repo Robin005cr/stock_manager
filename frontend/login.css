@@ -1,0 +1,22 @@
+:root{--bg:#f5f7fb;--card:#fff;--accent:#2563eb;--muted:#6b7280}
+*{box-sizing:border-box}
+body{font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.container{background:var(--card);padding:28px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.06);width:360px}
+h1{margin:0 0 16px;font-size:20px;color:#111827}
+.field{display:block;margin-bottom:12px}
+.field span{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+input[type="email"],input[type="password"]{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:6px;font-size:15px}
+.role-group{display:flex;gap:12px;margin-bottom:12px}
+.actions{margin-top:6px}
+button{background:var(--accent);color:#fff;border:0;padding:10px 14px;border-radius:6px;cursor:pointer}
+.links{display:flex;justify-content:space-between;margin-top:12px}
+.links a{font-size:13px;color:var(--accent);text-decoration:none}
+.error{color:#b91c1c;font-size:12px;height:14px;display:block;margin-top:6px}
+.message{margin-top:12px;color:#065f46}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center}
+.hidden{display:none}
+.modal-content{background:#fff;padding:18px;border-radius:8px;width:320px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+
+h2{margin:0 0 10px;font-size:16px}
+

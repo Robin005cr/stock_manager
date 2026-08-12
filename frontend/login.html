@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Login</title>
+    <link rel="stylesheet" href="login.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Sign In</h1>
+
+      <form id="loginForm" novalidate>
+        <div class="role-group">
+          <label><input type="radio" name="role" value="admin" /> Admin</label>
+          <label><input type="radio" name="role" value="viewer" checked /> View</label>
+        </div>
+
+        <label class="field">
+          <span>Email</span>
+          <input id="email" name="email" type="email" placeholder="you@example.com" required />
+          <small class="error" id="emailError"></small>
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input id="password" name="password" type="password" placeholder="8+ chars, 1 number, 1 special" required minlength="8" />
+          <small class="error" id="passwordError"></small>
+        </label>
+
+        <div class="actions">
+          <button type="submit">Sign in</button>
+        </div>
+
+        <div class="links">
+          <a href="#" id="forgotLink">Forgot password</a>
+          <a href="#" id="resetLink">Reset password</a>
+          <a href="#" id="signupLink">Sign up</a>
+        </div>
+      </form>
+
+      <div id="message" class="message" aria-live="polite"></div>
+
+      <div id="resetModal" class="modal hidden">
+        <form id="resetForm" class="modal-content">
+          <h2>Reset Password</h2>
+          <label class="field"><span>Current Password</span><input id="currentPwd" type="password" required /></label>
+          <label class="field"><span>New Password</span><input id="newPwd" type="password" required minlength="8" /></label>
+          <label class="field"><span>Confirm New Password</span><input id="confirmPwd" type="password" required minlength="8" /></label>
+          <div class="modal-actions">
+            <button type="submit">Save</button>
+            <button type="button" id="cancelReset">Cancel</button>
+          </div>
+          <small class="error" id="resetError"></small>
+        </form>
+      </div>
+
+      <div id="signupModal" class="modal hidden">
+        <form id="signupForm" class="modal-content">
+          <h2>Create Account</h2>
+          <label class="field"><span>Email</span><input id="signupEmail" type="email" required placeholder="you@example.com" /></label>
+          <label class="field"><span>Password</span><input id="signupPwd" type="password" required minlength="8" placeholder="8+ chars, 1 number, 1 special" /></label>
+          <label class="field"><span>Confirm Password</span><input id="signupConfirm" type="password" required minlength="8" /></label>
+          <div class="role-group">
+            <label><input type="radio" name="signupRole" value="admin" /> Admin</label>
+            <label><input type="radio" name="signupRole" value="viewer" checked /> View</label>
+          </div>
+          <div class="modal-actions">
+            <button type="submit">Create</button>
+            <button type="button" id="cancelSignup">Cancel</button>
+          </div>
+          <small class="error" id="signupError"></small>
+        </form>
+      </div>
+    </main>
+
+    <script src="login.js"></script>
+  </body>
+</html>
