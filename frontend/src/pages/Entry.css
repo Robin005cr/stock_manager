@@ -1,0 +1,92 @@
+.entry-page {
+  font-family: Arial, sans-serif;
+  background: #f4f7fb;
+  color: #333;
+  padding: 24px;
+  min-height: 100vh;
+}
+
+.entry-page .container {
+  max-width: 560px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  padding: 28px;
+}
+
+.entry-page h1 {
+  font-size: 28px;
+  margin-bottom: 18px;
+}
+
+.entry-page label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.entry-page .field {
+  margin-bottom: 16px;
+}
+
+.entry-page input,
+.entry-page select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #bfc9d9;
+  border-radius: 6px;
+  background: #fdfdff;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.entry-page .date-row {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 10px;
+  align-items: end;
+}
+
+.entry-page .date-row input[type='date'] {
+  width: 100%;
+}
+
+.entry-page button {
+  background: #2979ff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 12px 18px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background 0.2s ease;
+}
+
+.entry-page button:hover {
+  background: #1c5ed6;
+}
+
+.entry-page .hint {
+  font-size: 13px;
+  color: #5f6f85;
+  margin-top: 4px;
+}
+
+.entry-page .error {
+  color: #b91c1c;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.entry-page .page-nav {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.entry-page .page-nav a {
+  color: #2979ff;
+  text-decoration: none;
+  font-size: 14px;
+}
