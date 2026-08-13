@@ -1,0 +1,136 @@
+:root {
+  --bg: #f5f7fb;
+  --card: #fff;
+  --accent: #2563eb;
+  --muted: #6b7280;
+}
+
+.login-page {
+  font-family: Inter, Segoe UI, Arial, sans-serif;
+  background: var(--bg);
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-page .container {
+  background: var(--card);
+  padding: 28px;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  width: 360px;
+}
+
+.login-page h1 {
+  margin: 0 0 16px;
+  font-size: 20px;
+  color: #111827;
+}
+
+.login-page .field {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.login-page .field span {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.login-page input[type='email'],
+.login-page input[type='password'] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.login-page .role-group {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.login-page .actions {
+  margin-top: 6px;
+}
+
+.login-page button {
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.login-page .links {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.login-page .links a {
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.login-page .error {
+  color: #b91c1c;
+  font-size: 12px;
+  min-height: 14px;
+  display: block;
+  margin-top: 6px;
+}
+
+.login-page .message {
+  margin-top: 12px;
+  color: #065f46;
+}
+
+.login-page .modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-page .modal-content {
+  background: #fff;
+  padding: 18px;
+  border-radius: 8px;
+  width: 320px;
+}
+
+.login-page .modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.login-page h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.login-page .page-nav {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.login-page .page-nav a {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 14px;
+}
