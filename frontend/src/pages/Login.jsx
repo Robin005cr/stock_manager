@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import PageHeader from '../components/PageHeader';
+import { login, register, saveSession } from '../api/auth';
 import './Login.css';
 
 const emailRegex = /^\S+@\S+\.\S+$/;
@@ -33,7 +34,7 @@ export default function Login() {
     setMessage('');
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     clearErrors();
 
@@ -48,8 +49,14 @@ export default function Login() {
     }
     if (!ok) return;
 
-    const roleLabel = role === 'admin' ? 'Admin' : 'Viewer';
-    setMessage(`Signed in as ${roleLabel} (${email.trim()}) — simulation only.`);
+    try {
+      const data = await login({ email: email.trim(), password, role });
+      saveSession(data.token, data.user);
+      const roleLabel = data.user.role === 'admin' ? 'Admin' : 'Viewer';
+      setMessage(`Signed in as ${roleLabel} (${data.user.email}).`);
+    } catch (err) {
+      setPasswordError(err.message || 'Sign in failed.');
+    }
   }
 
   function handleForgotPassword(event) {
@@ -88,7 +95,7 @@ export default function Login() {
     setConfirmPwd('');
   }
 
-  function handleSignupSubmit(event) {
+  async function handleSignupSubmit(event) {
     event.preventDefault();
     setSignupError('');
 
@@ -106,258 +113,256 @@ export default function Login() {
     }
 
     try {
-      const users = JSON.parse(localStorage.getItem('sm_users') || '{}');
-      if (users[signupEmail.trim()]) {
-        setSignupError('An account with that email already exists');
-        return;
-      }
-      users[signupEmail.trim()] = { password: signupPwd, role: signupRole };
-      localStorage.setItem('sm_users', JSON.stringify(users));
-      alert(`Account created for ${signupEmail.trim()} (simulation). You may now sign in.`);
+      const data = await register({
+        email: signupEmail.trim(),
+        password: signupPwd,
+        role: signupRole,
+      });
+      saveSession(data.token, data.user);
       setShowSignupModal(false);
       setSignupEmail('');
       setSignupPwd('');
       setSignupConfirm('');
       setSignupRole('viewer');
-    } catch {
-      setSignupError('Unable to save account locally');
+      setMessage(`Account created for ${data.user.email}. You are signed in.`);
+    } catch (err) {
+      setSignupError(err.message || 'Could not create account.');
     }
   }
 
   return (
-    <main className="login-page">
-      <div className="container">
-        <nav className="page-nav">
-          <Link to="/">Update</Link>
-          <Link to="/search">Search</Link>
-        </nav>
-        <h1>Sign In</h1>
+    <>
+      <PageHeader title="Sign in" description="User accounts are stored in MongoDB. Password reset is still demo-only." />
+      <div className="app-content">
+        <div className="page-card login-card">
+          <form onSubmit={handleSubmit} noValidate className="login-form">
+            <div className="role-group" role="radiogroup" aria-label="Account role">
+              <label className="role-chip">
+                <input
+                  type="radio"
+                  name="role"
+                  value="admin"
+                  checked={role === 'admin'}
+                  onChange={() => setRole('admin')}
+                />
+                Admin
+              </label>
+              <label className="role-chip">
+                <input
+                  type="radio"
+                  name="role"
+                  value="viewer"
+                  checked={role === 'viewer'}
+                  onChange={() => setRole('viewer')}
+                />
+                Viewer
+              </label>
+            </div>
 
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="role-group">
-            <label>
+            <div className="field">
+              <label htmlFor="email">Email</label>
               <input
-                type="radio"
-                name="role"
-                value="admin"
-                checked={role === 'admin'}
-                onChange={() => setRole('admin')}
-              />{' '}
-              Admin
-            </label>
-            <label>
+                className="ui-input"
+                id="email"
+                name="email"
+                type="email"
+                placeholder="you@example.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              {emailError && <small className="ui-error">{emailError}</small>}
+            </div>
+
+            <div className="field">
+              <label htmlFor="password">Password</label>
               <input
-                type="radio"
-                name="role"
-                value="viewer"
-                checked={role === 'viewer'}
-                onChange={() => setRole('viewer')}
-              />{' '}
-              View
-            </label>
-          </div>
+                className="ui-input"
+                id="password"
+                name="password"
+                type="password"
+                placeholder="8+ chars, 1 number, 1 special"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              {passwordError && <small className="ui-error">{passwordError}</small>}
+            </div>
 
-          <label className="field">
-            <span>Email</span>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="you@example.com"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <small className="error">{emailError}</small>
-          </label>
+            <button type="submit" className="btn btn-primary login-submit">
+              Sign in
+            </button>
 
-          <label className="field">
-            <span>Password</span>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="8+ chars, 1 number, 1 special"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <small className="error">{passwordError}</small>
-          </label>
+            <div className="login-links">
+              <button type="button" className="link-btn" onClick={handleForgotPassword}>
+                Forgot password
+              </button>
+              <button type="button" className="link-btn" onClick={() => setShowResetModal(true)}>
+                Reset password
+              </button>
+              <button type="button" className="link-btn" onClick={() => setShowSignupModal(true)}>
+                Create account
+              </button>
+            </div>
+          </form>
 
-          <div className="actions">
-            <button type="submit">Sign in</button>
-          </div>
-
-          <div className="links">
-            <a href="#" onClick={handleForgotPassword}>
-              Forgot password
-            </a>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                setShowResetModal(true);
-              }}
-            >
-              Reset password
-            </a>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                setShowSignupModal(true);
-              }}
-            >
-              Sign up
-            </a>
-          </div>
-        </form>
-
-        {message && (
-          <div className="message" aria-live="polite">
-            {message}
-          </div>
-        )}
-
-        {showResetModal && (
-          <div className="modal">
-            <form className="modal-content" onSubmit={handleResetSubmit}>
-              <h2>Reset Password</h2>
-              <label className="field">
-                <span>Current Password</span>
-                <input
-                  id="currentPwd"
-                  type="password"
-                  required
-                  value={currentPwd}
-                  onChange={(e) => setCurrentPwd(e.target.value)}
-                />
-              </label>
-              <label className="field">
-                <span>New Password</span>
-                <input
-                  id="newPwd"
-                  type="password"
-                  required
-                  minLength={8}
-                  value={newPwd}
-                  onChange={(e) => setNewPwd(e.target.value)}
-                />
-              </label>
-              <label className="field">
-                <span>Confirm New Password</span>
-                <input
-                  id="confirmPwd"
-                  type="password"
-                  required
-                  minLength={8}
-                  value={confirmPwd}
-                  onChange={(e) => setConfirmPwd(e.target.value)}
-                />
-              </label>
-              <div className="modal-actions">
-                <button type="submit">Save</button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowResetModal(false);
-                    setCurrentPwd('');
-                    setNewPwd('');
-                    setConfirmPwd('');
-                    setResetError('');
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-              <small className="error">{resetError}</small>
-            </form>
-          </div>
-        )}
-
-        {showSignupModal && (
-          <div className="modal">
-            <form className="modal-content" onSubmit={handleSignupSubmit}>
-              <h2>Create Account</h2>
-              <label className="field">
-                <span>Email</span>
-                <input
-                  id="signupEmail"
-                  type="email"
-                  required
-                  placeholder="you@example.com"
-                  value={signupEmail}
-                  onChange={(e) => setSignupEmail(e.target.value)}
-                />
-              </label>
-              <label className="field">
-                <span>Password</span>
-                <input
-                  id="signupPwd"
-                  type="password"
-                  required
-                  minLength={8}
-                  placeholder="8+ chars, 1 number, 1 special"
-                  value={signupPwd}
-                  onChange={(e) => setSignupPwd(e.target.value)}
-                />
-              </label>
-              <label className="field">
-                <span>Confirm Password</span>
-                <input
-                  id="signupConfirm"
-                  type="password"
-                  required
-                  minLength={8}
-                  value={signupConfirm}
-                  onChange={(e) => setSignupConfirm(e.target.value)}
-                />
-              </label>
-              <div className="role-group">
-                <label>
-                  <input
-                    type="radio"
-                    name="signupRole"
-                    value="admin"
-                    checked={signupRole === 'admin'}
-                    onChange={() => setSignupRole('admin')}
-                  />{' '}
-                  Admin
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    name="signupRole"
-                    value="viewer"
-                    checked={signupRole === 'viewer'}
-                    onChange={() => setSignupRole('viewer')}
-                  />{' '}
-                  View
-                </label>
-              </div>
-              <div className="modal-actions">
-                <button type="submit">Create</button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowSignupModal(false);
-                    setSignupEmail('');
-                    setSignupPwd('');
-                    setSignupConfirm('');
-                    setSignupRole('viewer');
-                    setSignupError('');
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-              <small className="error">{signupError}</small>
-            </form>
-          </div>
-        )}
+          {message && (
+            <div className="alert-banner success login-message" role="status">
+              {message}
+            </div>
+          )}
+        </div>
       </div>
-    </main>
+
+      {showResetModal && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="reset-title">
+          <form className="modal-panel" onSubmit={handleResetSubmit}>
+            <h2 id="reset-title">Reset password</h2>
+            <div className="field">
+              <label htmlFor="currentPwd">Current password</label>
+              <input
+                className="ui-input"
+                id="currentPwd"
+                type="password"
+                required
+                value={currentPwd}
+                onChange={(e) => setCurrentPwd(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="newPwd">New password</label>
+              <input
+                className="ui-input"
+                id="newPwd"
+                type="password"
+                required
+                minLength={8}
+                value={newPwd}
+                onChange={(e) => setNewPwd(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="confirmPwd">Confirm new password</label>
+              <input
+                className="ui-input"
+                id="confirmPwd"
+                type="password"
+                required
+                minLength={8}
+                value={confirmPwd}
+                onChange={(e) => setConfirmPwd(e.target.value)}
+              />
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowResetModal(false);
+                  setCurrentPwd('');
+                  setNewPwd('');
+                  setConfirmPwd('');
+                  setResetError('');
+                }}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Save
+              </button>
+            </div>
+            {resetError && <small className="ui-error">{resetError}</small>}
+          </form>
+        </div>
+      )}
+
+      {showSignupModal && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="signup-title">
+          <form className="modal-panel" onSubmit={handleSignupSubmit}>
+            <h2 id="signup-title">Create account</h2>
+            <div className="field">
+              <label htmlFor="signupEmail">Email</label>
+              <input
+                className="ui-input"
+                id="signupEmail"
+                type="email"
+                required
+                placeholder="you@example.com"
+                value={signupEmail}
+                onChange={(e) => setSignupEmail(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="signupPwd">Password</label>
+              <input
+                className="ui-input"
+                id="signupPwd"
+                type="password"
+                required
+                minLength={8}
+                placeholder="8+ chars, 1 number, 1 special"
+                value={signupPwd}
+                onChange={(e) => setSignupPwd(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="signupConfirm">Confirm password</label>
+              <input
+                className="ui-input"
+                id="signupConfirm"
+                type="password"
+                required
+                minLength={8}
+                value={signupConfirm}
+                onChange={(e) => setSignupConfirm(e.target.value)}
+              />
+            </div>
+            <div className="role-group" role="radiogroup" aria-label="Signup role">
+              <label className="role-chip">
+                <input
+                  type="radio"
+                  name="signupRole"
+                  value="admin"
+                  checked={signupRole === 'admin'}
+                  onChange={() => setSignupRole('admin')}
+                />
+                Admin
+              </label>
+              <label className="role-chip">
+                <input
+                  type="radio"
+                  name="signupRole"
+                  value="viewer"
+                  checked={signupRole === 'viewer'}
+                  onChange={() => setSignupRole('viewer')}
+                />
+                Viewer
+              </label>
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowSignupModal(false);
+                  setSignupEmail('');
+                  setSignupPwd('');
+                  setSignupConfirm('');
+                  setSignupRole('viewer');
+                  setSignupError('');
+                }}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Create
+              </button>
+            </div>
+            {signupError && <small className="ui-error">{signupError}</small>}
+          </form>
+        </div>
+      )}
+    </>
   );
 }
