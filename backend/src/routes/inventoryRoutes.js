@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { InventoryItem } from '../models/InventoryItem.js';
+import { MetadataOption } from '../models/MetadataOption.js';
 import { buildInventoryQuery } from '../utils/inventoryQuery.js';
 import { requireAuth } from '../middleware/auth.js';
+import defaultMetadata from '../data/defaultMetadata.json' with { type: 'json' };
 
 const router = Router();
 
@@ -9,18 +11,33 @@ router.use(requireAuth);
 
 router.get('/filter-options', async (_req, res, next) => {
   try {
-    const [measurements, companies, categories, quantities, godowns] = await Promise.all([
+    const [measurements, companies, categories, quantities, godowns, metadataEntries] = await Promise.all([
       InventoryItem.distinct('measurement'),
       InventoryItem.distinct('company'),
       InventoryItem.distinct('category'),
       InventoryItem.distinct('quantity'),
       InventoryItem.distinct('godown'),
+      MetadataOption.find({ kind: { $in: ['measurement', 'company', 'category'] } }).select('kind value').lean(),
     ]);
 
+    const metadataByKind = {
+      measurement: new Set(),
+      company: new Set(),
+      category: new Set(),
+    };
+
+    metadataEntries.forEach(({ kind, value }) => {
+      if (value) metadataByKind[kind]?.add(value);
+    });
+
+    const seededMeasurements = [...new Set([...(metadataByKind.measurement || []), ...measurements.filter(Boolean)])].sort();
+    const seededCompanies = [...new Set([...(defaultMetadata.companies || []), ...(metadataByKind.company || []), ...companies.filter(Boolean)])].sort();
+    const seededCategories = [...new Set([...(defaultMetadata.categories || []), ...(metadataByKind.category || []), ...categories.filter(Boolean)])].sort();
+
     res.json({
-      measurements: measurements.filter(Boolean).sort(),
-      companies: companies.filter(Boolean).sort(),
-      categories: categories.filter(Boolean).sort(),
+      measurements: seededMeasurements,
+      companies: seededCompanies,
+      categories: seededCategories,
       quantities: quantities.sort((a, b) => a - b),
       godowns: godowns.filter(Boolean).sort(),
     });
@@ -46,6 +63,8 @@ router.get('/', async (req, res, next) => {
       id: item._id.toString(),
       measurement: item.measurement,
       productName: item.productName,
+      productCode: item.productCode,
+      productImage: item.productImage,
       company: item.company,
       category: item.category,
       quantity: item.quantity,
@@ -61,9 +80,9 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   try {
-    const { measurement, productName, company, category, quantity, godown, dateOfLoad } = req.body;
+    const { measurement, productName, productCode, productImage, company, category, quantity, godown, dateOfLoad } = req.body;
 
-    if (!productName?.trim() || !company?.trim() || !category?.trim() || !godown?.trim()) {
+    if (!productName?.trim() || !company?.trim() || !category?.trim()) {
       return res.status(400).json({ message: 'Missing required fields.' });
     }
 
@@ -75,10 +94,12 @@ router.post('/', async (req, res, next) => {
     const item = await InventoryItem.create({
       measurement: measurement?.trim() || '',
       productName: productName.trim(),
+      productCode: typeof productCode === 'string' ? productCode.trim() : String(productCode ?? '').trim(),
+      productImage: typeof productImage === 'string' ? productImage.trim() : '',
       company: company.trim(),
       category: category.trim(),
       quantity: qty,
-      godown: godown.trim(),
+      godown: typeof godown === 'string' ? godown.trim() : '',
       dateOfLoad: dateOfLoad || '',
     });
 

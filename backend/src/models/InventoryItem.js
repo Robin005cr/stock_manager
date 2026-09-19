@@ -4,10 +4,12 @@ const inventoryItemSchema = new mongoose.Schema(
   {
     measurement: { type: String, default: '' },
     productName: { type: String, required: true, trim: true },
+    productCode: { type: String, default: '' },
+    productImage: { type: String, default: '' },
     company: { type: String, required: true, trim: true },
     category: { type: String, required: true, trim: true },
     quantity: { type: Number, required: true, min: 0 },
-    godown: { type: String, required: true, trim: true },
+    godown: { type: String, default: '' },
     dateOfLoad: { type: String, default: '' },
   },
   {

@@ -5,6 +5,7 @@ import { connectDb } from './db.js';
 import { seedInventoryIfEmpty } from './seed.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import metadataRoutes from './routes/metadataRoutes.js';
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/metadata', metadataRoutes);
 
 app.use((error, _req, res, _next) => {
   console.error(error);

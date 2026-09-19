@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import { fetchFilterOptions, fetchInventory } from '../api/inventory';
+import { defaultMetadata } from '../data/defaultMetadata';
 import { exportResults } from '../utils/exportUtils';
 import './Search.css';
 
@@ -16,7 +17,7 @@ function FilterSelect({ id, label, value, onChange, options }) {
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
-      <select id={id} name={id} className="ui-select" value={value} onChange={(e) => onChange(e.target.value)}>
+      <select id={id} name={id} className="ui-select" value={value} onChange={(event) => onChange(event.target.value)}>
         <option value="">Any</option>
         {options.map((option) => (
           <option key={option} value={option}>
@@ -30,13 +31,14 @@ function FilterSelect({ id, label, value, onChange, options }) {
 
 export default function Search() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [measurementValue, setMeasurementValue] = useState('');
   const [companyValue, setCompanyValue] = useState('');
-  const [categoryValue, setCategoryValue] = useState('');
   const [quantityValue, setQuantityValue] = useState('');
   const [godownValue, setGodownValue] = useState('');
   const [dateValue, setDateValue] = useState('');
   const [exportFormat, setExportFormat] = useState('csv');
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [results, setResults] = useState([]);
   const [catalogTotal, setCatalogTotal] = useState(0);
@@ -44,31 +46,38 @@ export default function Search() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const categoryChips = useMemo(
+    () => ['All', ...(filterOptions.categories || [])],
+    [filterOptions.categories],
+  );
+
   const filters = useMemo(
     () => ({
       searchTerm,
       measurementValue,
       companyValue,
-      categoryValue,
+      categoryValue: selectedCategory === 'All' ? '' : selectedCategory,
       quantityValue,
       godownValue,
       dateValue,
     }),
-    [
-      searchTerm,
-      measurementValue,
-      companyValue,
-      categoryValue,
-      quantityValue,
-      godownValue,
-      dateValue,
-    ],
+    [searchTerm, selectedCategory, measurementValue, companyValue, quantityValue, godownValue, dateValue],
   );
 
   const totalQuantity = useMemo(
     () => results.reduce((sum, item) => sum + Number(item.quantity), 0),
     [results],
   );
+
+  const activeFilterCount = [measurementValue, companyValue, quantityValue, godownValue, dateValue].filter(Boolean).length;
+
+  function clearFilters() {
+    setMeasurementValue('');
+    setCompanyValue('');
+    setQuantityValue('');
+    setGodownValue('');
+    setDateValue('');
+  }
 
   const loadInventory = useCallback(async (activeFilters, trackCatalog = false) => {
     setLoading(true);
@@ -89,15 +98,30 @@ export default function Search() {
 
   useEffect(() => {
     fetchFilterOptions()
-      .then(setFilterOptions)
-      .catch(() => setFilterOptions(emptyFilterOptions));
+      .then((data) =>
+        setFilterOptions({
+          measurements: [...new Set([...(defaultMetadata.measurements || []), ...(data.measurements || [])])],
+          companies: [...new Set([...(defaultMetadata.companies || []), ...(data.companies || [])])],
+          categories: [...new Set([...(defaultMetadata.categories || []), ...(data.categories || [])])],
+          quantities: [...new Set([...(data.quantities || [])])],
+          godowns: [...new Set([...(data.godowns || [])])],
+        }),
+      )
+      .catch(() =>
+        setFilterOptions({
+          measurements: defaultMetadata.measurements,
+          companies: defaultMetadata.companies,
+          categories: defaultMetadata.categories,
+          quantities: defaultMetadata.quantities,
+          godowns: defaultMetadata.godowns,
+        }),
+      );
     loadInventory({}, true);
   }, [loadInventory]);
 
-  function handleSearch(event) {
-    event.preventDefault();
+  useEffect(() => {
     loadInventory(filters, false);
-  }
+  }, [filters, loadInventory]);
 
   function handleExport() {
     exportResults(results, exportFormat);
@@ -132,71 +156,102 @@ export default function Search() {
         </div>
 
         <div className="page-card search-panel">
-          <form onSubmit={handleSearch}>
-            <div className="form-grid">
-              <div className="field search-wide">
-                <label htmlFor="searchInput">Search product</label>
-                <input
-                  className="ui-input"
-                  type="search"
-                  id="searchInput"
-                  name="searchInput"
-                  placeholder="Product, category, or company"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+          <div className="search-toolbar">
+            <input
+              className="search-input"
+              type="search"
+              id="searchInput"
+              name="searchInput"
+              placeholder="Search products, codes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <button
+              type="button"
+              className={`filter-toggle${filtersOpen ? ' active' : ''}`}
+              aria-expanded={filtersOpen}
+              aria-controls="inventory-filters"
+              onClick={() => setFiltersOpen((isOpen) => !isOpen)}
+              title="Show filters"
+            >
+              <span className="filter-icon" aria-hidden="true" />
+              <span>Filter</span>
+              {activeFilterCount > 0 && <span className="filter-count">{activeFilterCount}</span>}
+            </button>
+          </div>
+
+          <div className="category-strip" aria-label="Inventory categories">
+            {categoryChips.map((category) => {
+              const isActive = selectedCategory === category;
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  className={`category-chip${isActive ? ' active' : ''}`}
+                  onClick={() => setSelectedCategory(category)}
+                >
+                  {category}
+                </button>
+              );
+            })}
+          </div>
+
+          {filtersOpen && (
+            <div className="filter-drawer" id="inventory-filters">
+              <div className="filter-drawer-header">
+                <div>
+                  <strong>Filter inventory</strong>
+                  <span>Refine the products shown below.</span>
+                </div>
+                {activeFilterCount > 0 && (
+                  <button type="button" className="clear-filters" onClick={clearFilters}>
+                    Clear all
+                  </button>
+                )}
               </div>
-              <FilterSelect
-                id="measurementFilter"
-                label="Measurement"
-                value={measurementValue}
-                onChange={setMeasurementValue}
-                options={filterOptions.measurements}
-              />
-              <FilterSelect
-                id="companyFilter"
-                label="Company"
-                value={companyValue}
-                onChange={setCompanyValue}
-                options={filterOptions.companies}
-              />
-              <FilterSelect
-                id="categoryFilter"
-                label="Category"
-                value={categoryValue}
-                onChange={setCategoryValue}
-                options={filterOptions.categories}
-              />
-              <FilterSelect
-                id="quantityFilter"
-                label="Quantity"
-                value={quantityValue}
-                onChange={setQuantityValue}
-                options={filterOptions.quantities}
-              />
-              <FilterSelect
-                id="godownFilter"
-                label="Godown"
-                value={godownValue}
-                onChange={setGodownValue}
-                options={filterOptions.godowns}
-              />
-              <div className="field">
-                <label htmlFor="dateFilter">Date of load</label>
-                <input
-                  className="ui-input"
-                  type="date"
-                  id="dateFilter"
-                  name="dateFilter"
-                  value={dateValue}
-                  onChange={(e) => setDateValue(e.target.value)}
+              <div className="advanced-filters">
+                <FilterSelect
+                  id="measurementFilter"
+                  label="Measurement"
+                  value={measurementValue}
+                  onChange={setMeasurementValue}
+                  options={filterOptions.measurements}
                 />
+                <FilterSelect
+                  id="companyFilter"
+                  label="Company"
+                  value={companyValue}
+                  onChange={setCompanyValue}
+                  options={filterOptions.companies}
+                />
+                <FilterSelect
+                  id="quantityFilter"
+                  label="Quantity"
+                  value={quantityValue}
+                  onChange={setQuantityValue}
+                  options={filterOptions.quantities}
+                />
+                <FilterSelect
+                  id="godownFilter"
+                  label="Godown"
+                  value={godownValue}
+                  onChange={setGodownValue}
+                  options={filterOptions.godowns}
+                />
+                <div className="field">
+                  <label htmlFor="dateFilter">Date of load</label>
+                  <input
+                    className="ui-input"
+                    type="date"
+                    id="dateFilter"
+                    name="dateFilter"
+                    value={dateValue}
+                    onChange={(event) => setDateValue(event.target.value)}
+                  />
+                </div>
               </div>
             </div>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Loading…' : 'Apply filters'}
-            </button>
-          </form>
+          )}
 
           <div className="search-export-row">
             <div className="field export-format-field">

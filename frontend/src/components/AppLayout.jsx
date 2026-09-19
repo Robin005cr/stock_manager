@@ -1,12 +1,21 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { clearSession } from '../api/auth';
 
 const navItems = [
   { to: '/', label: 'Update record', icon: '✎', end: true },
   { to: '/search', label: 'Search inventory', icon: '⌕' },
+  { to: '/meta-details', label: 'Add meta details', icon: '▣' },
   { to: '/login', label: 'Sign in', icon: '◉' },
 ];
 
 export default function AppLayout() {
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    clearSession();
+    navigate('/login');
+  }
+
   return (
     <div className="app-shell">
       <aside className="app-sidebar" aria-label="Main navigation">
@@ -37,6 +46,11 @@ export default function AppLayout() {
         <div className="app-sidebar-footer">Warehouse ops · v1.0</div>
       </aside>
       <div className="app-main">
+        <div className="top-bar">
+          <button type="button" className="logout-button" onClick={handleLogout}>
+            Logout
+          </button>
+        </div>
         <Outlet />
       </div>
     </div>

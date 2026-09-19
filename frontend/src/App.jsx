@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import AppLayout from './components/AppLayout';
 import Entry from './pages/Entry';
 import Login from './pages/Login';
+import Metadata from './pages/Metadata';
 import Search from './pages/Search';
 import './styles/global.css';
 
@@ -12,6 +13,7 @@ export default function App() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<Entry />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/meta-details" element={<Metadata />} />
           <Route path="/login" element={<Login />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PageHeader from '../components/PageHeader';
-import { createInventoryItem } from '../api/inventory';
+import { createInventoryItem, fetchFilterOptions } from '../api/inventory';
+import { defaultMetadata } from '../data/defaultMetadata';
 import { formatDateToText, formatTextToDate } from '../utils/dateUtils';
 import './Entry.css';
 
 const initialForm = {
   measurement: '',
   productName: '',
+  productCode: '',
+  productImage: '',
   company: '',
   category: '',
   quantity: '',
@@ -21,6 +24,25 @@ export default function Entry() {
   const [successMessage, setSuccessMessage] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [metadataOptions, setMetadataOptions] = useState({ companies: [], categories: [], measurements: [] });
+
+  useEffect(() => {
+    fetchFilterOptions()
+      .then((data) => {
+        setMetadataOptions({
+          companies: [...new Set([...(defaultMetadata.companies || []), ...(data.companies || [])])],
+          categories: [...new Set([...(defaultMetadata.categories || []), ...(data.categories || [])])],
+          measurements: [...new Set([...(defaultMetadata.measurements || []), ...(data.measurements || [])])],
+        });
+      })
+      .catch(() =>
+        setMetadataOptions({
+          companies: defaultMetadata.companies,
+          categories: defaultMetadata.categories,
+          measurements: defaultMetadata.measurements,
+        }),
+      );
+  }, []);
 
   function updateField(name, value) {
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -53,6 +75,33 @@ export default function Entry() {
     }
   }
 
+  function handleImageSelect(event) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setForm((prev) => ({ ...prev, productImage: '' }));
+      return;
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    const maxBytes = 5 * 1024 * 1024;
+
+    if (!allowedTypes.includes(file.type) || file.size > maxBytes) {
+      setErrors((prev) => ({
+        ...prev,
+        productImage: 'Please upload a JPG or PNG image up to 5 MB.',
+      }));
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((prev) => ({ ...prev, productImage: String(reader.result || '') }));
+      setErrors((prev) => ({ ...prev, productImage: '' }));
+    };
+    reader.readAsDataURL(file);
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -71,7 +120,6 @@ export default function Entry() {
     if (!form.productName.trim()) nextErrors.productName = 'Product name is required.';
     if (!form.company.trim()) nextErrors.company = 'Company is required.';
     if (!form.category.trim()) nextErrors.category = 'Category is required.';
-    if (!form.godown.trim()) nextErrors.godown = 'Godown is required.';
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -84,6 +132,8 @@ export default function Entry() {
       await createInventoryItem({
         measurement: form.measurement.trim(),
         productName: form.productName.trim(),
+        productCode: form.productCode.trim(),
+        productImage: form.productImage,
         company: form.company.trim(),
         category: form.category.trim(),
         quantity: Number(quantityValue),
@@ -122,15 +172,20 @@ export default function Entry() {
             <div className="form-grid entry-form-grid">
               <div className="field">
                 <label htmlFor="measurement">Measurement</label>
-                <input
-                  className="ui-input"
-                  type="text"
+                <select
+                  className="ui-select"
                   id="measurement"
                   name="measurement"
-                  placeholder="e.g. 2 kg, 50 cm"
                   value={form.measurement}
                   onChange={(e) => updateField('measurement', e.target.value)}
-                />
+                >
+                  <option value="">Select measurement</option>
+                  {metadataOptions.measurements.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="field">
                 <label htmlFor="productName">
@@ -152,32 +207,42 @@ export default function Entry() {
                 <label htmlFor="company">
                   Company <span aria-hidden="true">*</span>
                 </label>
-                <input
-                  className="ui-input"
-                  type="text"
+                <select
+                  className="ui-select"
                   id="company"
                   name="company"
                   required
-                  placeholder="Enter company"
                   value={form.company}
                   onChange={(e) => updateField('company', e.target.value)}
-                />
+                >
+                  <option value="">Select company</option>
+                  {metadataOptions.companies.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
                 {errors.company && <div className="ui-error">{errors.company}</div>}
               </div>
               <div className="field">
                 <label htmlFor="category">
                   Category <span aria-hidden="true">*</span>
                 </label>
-                <input
-                  className="ui-input"
-                  type="text"
+                <select
+                  className="ui-select"
                   id="category"
                   name="category"
                   required
-                  placeholder="Enter category"
                   value={form.category}
                   onChange={(e) => updateField('category', e.target.value)}
-                />
+                >
+                  <option value="">Select category</option>
+                  {metadataOptions.categories.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
                 {errors.category && <div className="ui-error">{errors.category}</div>}
               </div>
               <div className="field">
@@ -200,20 +265,41 @@ export default function Entry() {
                 {errors.quantity && <div className="ui-error">{errors.quantity}</div>}
               </div>
               <div className="field">
-                <label htmlFor="godown">
-                  Godown <span aria-hidden="true">*</span>
-                </label>
+                <label htmlFor="productCode">Product code</label>
+                <input
+                  className="ui-input"
+                  type="text"
+                  id="productCode"
+                  name="productCode"
+                  placeholder="Enter product code"
+                  value={form.productCode}
+                  onChange={(e) => updateField('productCode', e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="productImage">Product image</label>
+                <input
+                  className="ui-input"
+                  type="file"
+                  id="productImage"
+                  name="productImage"
+                  accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                  onChange={handleImageSelect}
+                />
+                <div className="ui-hint">JPG or PNG only, up to 5 MB.</div>
+                {errors.productImage && <div className="ui-error">{errors.productImage}</div>}
+              </div>
+              <div className="field">
+                <label htmlFor="godown">Godown</label>
                 <input
                   className="ui-input"
                   type="text"
                   id="godown"
                   name="godown"
-                  required
                   placeholder="Enter godown"
                   value={form.godown}
                   onChange={(e) => updateField('godown', e.target.value)}
                 />
-                {errors.godown && <div className="ui-error">{errors.godown}</div>}
               </div>
             </div>
             <div className="field entry-date-field">
