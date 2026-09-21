@@ -26,9 +26,26 @@ export function fetchFilterOptions() {
   return apiRequest('/api/inventory/filter-options');
 }
 
+export function fetchInventoryItem(id) {
+  return apiRequest(`/api/inventory/${id}`);
+}
+
 export function createInventoryItem(payload) {
   return apiRequest('/api/inventory', {
     method: 'POST',
     body: JSON.stringify(payload),
+  });
+}
+
+export function updateInventoryItem(id, payload) {
+  return apiRequest(`/api/inventory/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteInventoryItem(id) {
+  return apiRequest(`/api/inventory/${id}`, {
+    method: 'DELETE',
   });
 }

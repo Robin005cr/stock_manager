@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import { fetchFilterOptions, fetchInventory } from '../api/inventory';
 import { defaultMetadata } from '../data/defaultMetadata';
+import { usePinnedProducts } from '../state/PinnedProductsContext';
 import { exportResults } from '../utils/exportUtils';
 import './Search.css';
 
@@ -45,6 +47,7 @@ export default function Search() {
   const [filterOptions, setFilterOptions] = useState(emptyFilterOptions);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { isPinned, togglePinned } = usePinnedProducts();
 
   const categoryChips = useMemo(
     () => ['All', ...(filterOptions.categories || [])],
@@ -291,6 +294,8 @@ export default function Search() {
                     <th>Qty</th>
                     <th>Godown</th>
                     <th>Load date</th>
+                    <th aria-label="Edit product" />
+                    <th aria-label="Pin product" />
                   </tr>
                 </thead>
                 <tbody>
@@ -307,6 +312,22 @@ export default function Search() {
                       <td>{item.quantity}</td>
                       <td>{item.godown}</td>
                       <td>{item.dateOfLoad}</td>
+                      <td className="search-edit-cell">
+                        <Link className="btn btn-secondary search-edit-button" to={`/edit-existing/${item.id}`}>
+                          Edit
+                        </Link>
+                      </td>
+                      <td className="pin-cell">
+                        <button
+                          type="button"
+                          className={`pin-button${isPinned(item) ? ' pinned' : ''}`}
+                          onClick={() => togglePinned(item)}
+                          aria-label={isPinned(item) ? `Unpin ${item.productName}` : `Pin ${item.productName}`}
+                          title={isPinned(item) ? 'Remove from pinned products' : 'Pin product'}
+                        >
+                          📌
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

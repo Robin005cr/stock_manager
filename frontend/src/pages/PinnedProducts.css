@@ -1,0 +1,56 @@
+.pinned-products-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.pinned-empty-state {
+  margin: 24px;
+}
+
+.pin-cell {
+  width: 56px;
+  text-align: center;
+}
+
+.pin-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  filter: grayscale(1);
+  opacity: 0.45;
+  font-size: 17px;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), filter var(--transition), opacity var(--transition), transform 0.1s ease;
+}
+
+.pin-button:hover,
+.pin-button:focus-visible {
+  border-color: var(--color-border);
+  background: #f8fafc;
+  filter: none;
+  opacity: 1;
+}
+
+.pin-button:active {
+  transform: scale(0.94);
+}
+
+.pin-button.pinned {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  filter: none;
+  opacity: 1;
+}
+
+.pinned-product-code {
+  display: block;
+  margin-top: 3px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}

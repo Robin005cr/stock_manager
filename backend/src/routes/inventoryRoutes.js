@@ -78,6 +78,16 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+router.get('/:id', async (req, res, next) => {
+  try {
+    const item = await InventoryItem.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: 'Inventory item not found.' });
+    res.json(item);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/', async (req, res, next) => {
   try {
     const { measurement, productName, productCode, productImage, company, category, quantity, godown, dateOfLoad } = req.body;
@@ -104,6 +114,52 @@ router.post('/', async (req, res, next) => {
     });
 
     res.status(201).json(item);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/:id', async (req, res, next) => {
+  try {
+    const { measurement, productName, productCode, productImage, company, category, quantity, godown, dateOfLoad } = req.body;
+
+    if (!productName?.trim() || !company?.trim() || !category?.trim()) {
+      return res.status(400).json({ message: 'Missing required fields.' });
+    }
+
+    const qty = Number(quantity);
+    if (!Number.isInteger(qty) || qty < 0) {
+      return res.status(400).json({ message: 'Quantity must be a non-negative integer.' });
+    }
+
+    const item = await InventoryItem.findByIdAndUpdate(
+      req.params.id,
+      {
+        measurement: measurement?.trim() || '',
+        productName: productName.trim(),
+        productCode: typeof productCode === 'string' ? productCode.trim() : String(productCode ?? '').trim(),
+        productImage: typeof productImage === 'string' ? productImage.trim() : '',
+        company: company.trim(),
+        category: category.trim(),
+        quantity: qty,
+        godown: typeof godown === 'string' ? godown.trim() : '',
+        dateOfLoad: dateOfLoad || '',
+      },
+      { new: true, runValidators: true },
+    );
+
+    if (!item) return res.status(404).json({ message: 'Inventory item not found.' });
+    res.json(item);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const item = await InventoryItem.findByIdAndDelete(req.params.id);
+    if (!item) return res.status(404).json({ message: 'Inventory item not found.' });
+    res.json({ message: 'Inventory item deleted.' });
   } catch (error) {
     next(error);
   }

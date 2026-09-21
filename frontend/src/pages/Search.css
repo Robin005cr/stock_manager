@@ -210,6 +210,17 @@
   font-weight: 600;
 }
 
+.search-edit-cell {
+  white-space: nowrap;
+}
+
+.search-edit-button {
+  display: inline-flex;
+  padding: 7px 10px;
+  font-size: 12px;
+  text-decoration: none;
+}
+
 @media (max-width: 640px) {
   .category-strip {
     overflow-x: auto;

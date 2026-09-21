@@ -1,0 +1,102 @@
+[
+  {
+    "measurement": "2 kg",
+    "productName": "Apple Juice",
+    "productCode": "BEV-001",
+    "company": "Fresh Farms",
+    "category": "Beverages",
+    "quantity": 25,
+    "godown": "A1",
+    "dateOfLoad": "2026-08-01"
+  },
+  {
+    "measurement": "500 ml",
+    "productName": "Mineral Water",
+    "productCode": "BEV-002",
+    "company": "Pure Springs",
+    "category": "Beverages",
+    "quantity": 100,
+    "godown": "B2",
+    "dateOfLoad": "2026-08-04"
+  },
+  {
+    "measurement": "10 pcs",
+    "productName": "LED Bulb",
+    "productCode": "ELE-001",
+    "company": "BrightTech",
+    "category": "Electronics",
+    "quantity": 50,
+    "godown": "C3",
+    "dateOfLoad": "2026-07-30"
+  },
+  {
+    "measurement": "3 kg",
+    "productName": "Tomato Sauce",
+    "productCode": "CON-001",
+    "company": "KitchenPro",
+    "category": "Condiments",
+    "quantity": 40,
+    "godown": "A2",
+    "dateOfLoad": "2026-08-02"
+  },
+  {
+    "measurement": "1 kg",
+    "productName": "Basmati Rice",
+    "productCode": "GRO-001",
+    "company": "Harvest Grain",
+    "category": "Groceries",
+    "quantity": 75,
+    "godown": "A3",
+    "dateOfLoad": "2026-08-05"
+  },
+  {
+    "measurement": "250 g",
+    "productName": "Arabica Coffee",
+    "productCode": "BEV-003",
+    "company": "Mountain Roast",
+    "category": "Beverages",
+    "quantity": 60,
+    "godown": "B1",
+    "dateOfLoad": "2026-08-06"
+  },
+  {
+    "measurement": "500 g",
+    "productName": "Laundry Detergent",
+    "productCode": "HOM-001",
+    "company": "CleanHome",
+    "category": "Household",
+    "quantity": 35,
+    "godown": "D1",
+    "dateOfLoad": "2026-08-07"
+  },
+  {
+    "measurement": "12 pcs",
+    "productName": "Ballpoint Pens",
+    "productCode": "STA-001",
+    "company": "WriteWell",
+    "category": "Stationery",
+    "quantity": 80,
+    "godown": "C1",
+    "dateOfLoad": "2026-08-08"
+  },
+  {
+    "measurement": "5 L",
+    "productName": "Cooking Oil",
+    "productCode": "GRO-002",
+    "company": "Golden Kitchen",
+    "category": "Groceries",
+    "quantity": 45,
+    "godown": "A4",
+    "dateOfLoad": "2026-08-09"
+  },
+  {
+    "measurement": "1 pc",
+    "productName": "Wireless Keyboard",
+    "productCode": "ELE-002",
+    "company": "BrightTech",
+    "category": "Electronics",
+    "quantity": 20,
+    "godown": "C4",
+    "dateOfLoad": "2026-08-10"
+  }
+]

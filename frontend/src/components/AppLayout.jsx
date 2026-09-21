@@ -4,6 +4,8 @@ import { clearSession } from '../api/auth';
 const navItems = [
   { to: '/', label: 'Update record', icon: '✎', end: true },
   { to: '/search', label: 'Search inventory', icon: '⌕' },
+  { to: '/edit-existing', label: 'Edit existing', icon: '✎' },
+  { to: '/pinned-products', label: 'Pinned Products', icon: '📌' },
   { to: '/meta-details', label: 'Add meta details', icon: '▣' },
   { to: '/login', label: 'Sign in', icon: '◉' },
 ];

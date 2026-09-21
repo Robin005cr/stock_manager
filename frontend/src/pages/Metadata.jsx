@@ -15,6 +15,7 @@ export default function Metadata() {
   const [items, setItems] = useState(emptyMap);
   const [drafts, setDrafts] = useState(Object.fromEntries(metadataKinds.map(({ key }) => [key, ''])));
   const [editing, setEditing] = useState({});
+  const [viewing, setViewing] = useState({});
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(true);
@@ -72,6 +73,10 @@ export default function Metadata() {
   function cancelEdit(kind) {
     setEditing((prev) => ({ ...prev, [kind]: null }));
     setDrafts((prev) => ({ ...prev, [kind]: '' }));
+  }
+
+  function toggleView(kind) {
+    setViewing((prev) => ({ ...prev, [kind]: !prev[kind] }));
   }
 
   async function saveEdit(kind, optionId) {
@@ -143,52 +148,57 @@ export default function Metadata() {
                 <button type="button" className="btn btn-primary" onClick={() => handleAdd(key)}>
                   Add
                 </button>
+                <button type="button" className="btn btn-secondary" onClick={() => toggleView(key)}>
+                  {viewing[key] ? 'Hide' : 'View'}
+                </button>
               </div>
 
-              <div className="metadata-list"> 
-                {loading ? (
-                  <p className="metadata-empty">Loading…</p>
-                ) : items[key].length === 0 ? (
-                  <p className="metadata-empty">No {label.toLowerCase()} added yet.</p>
-                ) : (
-                  items[key].map((option) => {
-                    const isEditing = editing[key] === option.id;
-                    return (
-                      <div className="metadata-item" key={option.id}>
-                        {isEditing ? (
-                          <>
-                            <input
-                              className="ui-input"
-                              value={drafts[key]}
-                              onChange={(event) => setDrafts((prev) => ({ ...prev, [key]: event.target.value }))}
-                            />
-                            <div className="metadata-actions">
-                              <button type="button" className="btn btn-primary" onClick={() => saveEdit(key, option.id)}>
-                                Save
-                              </button>
-                              <button type="button" className="btn btn-secondary" onClick={() => cancelEdit(key)}>
-                                Cancel
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <span className="metadata-value">{option.value}</span>
-                            <div className="metadata-actions">
-                              <button type="button" className="btn btn-secondary" onClick={() => beginEdit(key, option)}>
-                                Edit
-                              </button>
-                              <button type="button" className="btn btn-danger" onClick={() => handleDelete(key, option.id)}>
-                                Delete
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
+              {viewing[key] && (
+                <div className="metadata-list">
+                  {loading ? (
+                    <p className="metadata-empty">Loading...</p>
+                  ) : items[key].length === 0 ? (
+                    <p className="metadata-empty">No {label.toLowerCase()} added yet.</p>
+                  ) : (
+                    items[key].map((option) => {
+                      const isEditing = editing[key] === option.id;
+                      return (
+                        <div className="metadata-item" key={option.id}>
+                          {isEditing ? (
+                            <>
+                              <input
+                                className="ui-input"
+                                value={drafts[key]}
+                                onChange={(event) => setDrafts((prev) => ({ ...prev, [key]: event.target.value }))}
+                              />
+                              <div className="metadata-actions">
+                                <button type="button" className="btn btn-primary" onClick={() => saveEdit(key, option.id)}>
+                                  Save
+                                </button>
+                                <button type="button" className="btn btn-secondary" onClick={() => cancelEdit(key)}>
+                                  Cancel
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <span className="metadata-value">{option.value}</span>
+                              <div className="metadata-actions">
+                                <button type="button" className="btn btn-secondary" onClick={() => beginEdit(key, option)}>
+                                  Edit
+                                </button>
+                                <button type="button" className="btn btn-danger" onClick={() => handleDelete(key, option.id)}>
+                                  Delete
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
