@@ -1,7 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import AppLayout from './components/AppLayout';
-import Entry from './pages/Entry';
 import EditExisting from './pages/EditExisting';
+import Entry from './pages/Entry';
 import Login from './pages/Login';
 import Metadata from './pages/Metadata';
 import PinnedProducts from './pages/PinnedProducts';

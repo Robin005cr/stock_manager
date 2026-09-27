@@ -31,6 +31,15 @@ export default function EditExisting() {
   const [message, setMessage] = useState('');
   const [submitError, setSubmitError] = useState('');
 
+  const currentUser = (() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('sm_user') || 'null');
+    } catch {
+      return null;
+    }
+  })();
+  const isAdmin = currentUser?.role === 'admin';
+
   useEffect(() => {
     if (!id) {
       setLoading(false);
@@ -160,24 +169,29 @@ export default function EditExisting() {
           )}
           {submitError && <div className="alert-banner entry-error-banner" role="alert">{submitError}</div>}
           {message && <div className="alert-banner success" role="status">{message}</div>}
+          {!isAdmin && id && (
+            <div className="alert-banner entry-error-banner" role="alert">
+              This action is available only for admin accounts.
+            </div>
+          )}
           {id && (loading ? <div className="edit-loading">Loading product...</div> : (
             <form onSubmit={handleSubmit} noValidate className="entry-form">
               <div className="form-grid entry-form-grid">
                 <div className="field">
                   <label htmlFor="edit-measurement">Measurement</label>
-                  <select className="ui-select" id="edit-measurement" value={form.measurement} onChange={(event) => updateField('measurement', event.target.value)}>
+                  <select className="ui-select" id="edit-measurement" value={form.measurement} onChange={(event) => updateField('measurement', event.target.value)} disabled={!isAdmin}>
                     <option value="">Select measurement</option>
                     {metadataOptions.measurements.map((option) => <option key={option} value={option}>{option}</option>)}
                   </select>
                 </div>
                 <div className="field">
                   <label htmlFor="edit-productName">Product name <span aria-hidden="true">*</span></label>
-                  <input className="ui-input" id="edit-productName" value={form.productName} onChange={(event) => updateField('productName', event.target.value)} />
+                  <input className="ui-input" id="edit-productName" value={form.productName} onChange={(event) => updateField('productName', event.target.value)} disabled={!isAdmin} />
                   {errors.productName && <div className="ui-error">{errors.productName}</div>}
                 </div>
                 <div className="field">
                   <label htmlFor="edit-company">Company <span aria-hidden="true">*</span></label>
-                  <select className="ui-select" id="edit-company" value={form.company} onChange={(event) => updateField('company', event.target.value)}>
+                  <select className="ui-select" id="edit-company" value={form.company} onChange={(event) => updateField('company', event.target.value)} disabled={!isAdmin}>
                     <option value="">Select company</option>
                     {metadataOptions.companies.map((option) => <option key={option} value={option}>{option}</option>)}
                   </select>
@@ -185,7 +199,7 @@ export default function EditExisting() {
                 </div>
                 <div className="field">
                   <label htmlFor="edit-category">Category <span aria-hidden="true">*</span></label>
-                  <select className="ui-select" id="edit-category" value={form.category} onChange={(event) => updateField('category', event.target.value)}>
+                  <select className="ui-select" id="edit-category" value={form.category} onChange={(event) => updateField('category', event.target.value)} disabled={!isAdmin}>
                     <option value="">Select category</option>
                     {metadataOptions.categories.map((option) => <option key={option} value={option}>{option}</option>)}
                   </select>
@@ -193,38 +207,38 @@ export default function EditExisting() {
                 </div>
                 <div className="field">
                   <label htmlFor="edit-quantity">Quantity <span aria-hidden="true">*</span></label>
-                  <input className="ui-input" type="number" min="0" step="1" id="edit-quantity" value={form.quantity} onChange={(event) => updateField('quantity', event.target.value)} />
+                  <input className="ui-input" type="number" min="0" step="1" id="edit-quantity" value={form.quantity} onChange={(event) => updateField('quantity', event.target.value)} disabled={!isAdmin} />
                   {errors.quantity && <div className="ui-error">{errors.quantity}</div>}
                 </div>
                 <div className="field">
                   <label htmlFor="edit-productCode">Product code</label>
-                  <input className="ui-input" id="edit-productCode" value={form.productCode} onChange={(event) => updateField('productCode', event.target.value)} />
+                  <input className="ui-input" id="edit-productCode" value={form.productCode} onChange={(event) => updateField('productCode', event.target.value)} disabled={!isAdmin} />
                 </div>
                 <div className="field">
                   <label htmlFor="edit-productImage">Product image</label>
-                  <input className="ui-input" type="file" id="edit-productImage" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={handleImageSelect} />
+                  <input className="ui-input" type="file" id="edit-productImage" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={handleImageSelect} disabled={!isAdmin} />
                   {form.productImage && <div className="edit-image-status">Current image will be kept unless replaced.</div>}
                   {errors.productImage && <div className="ui-error">{errors.productImage}</div>}
                 </div>
                 <div className="field">
                   <label htmlFor="edit-godown">Godown</label>
-                  <input className="ui-input" id="edit-godown" value={form.godown} onChange={(event) => updateField('godown', event.target.value)} />
+                  <input className="ui-input" id="edit-godown" value={form.godown} onChange={(event) => updateField('godown', event.target.value)} disabled={!isAdmin} />
                 </div>
               </div>
               <div className="field entry-date-field">
                 <label htmlFor="edit-loadDateText">Date of load</label>
                 <div className="date-row">
                   <div>
-                    <input className="ui-input" id="edit-loadDateText" placeholder="dd-mm-yyyy" value={form.loadDateText} onChange={(event) => updateField('loadDateText', event.target.value)} onBlur={handleDateTextBlur} />
+                    <input className="ui-input" id="edit-loadDateText" placeholder="dd-mm-yyyy" value={form.loadDateText} onChange={(event) => updateField('loadDateText', event.target.value)} onBlur={handleDateTextBlur} disabled={!isAdmin} />
                     {errors.loadDateText && <div className="ui-error">{errors.loadDateText}</div>}
                   </div>
-                  <input className="ui-input date-picker" type="date" aria-label="Choose date from calendar" value={form.loadDatePicker} onChange={(event) => handleDatePickerChange(event.target.value)} />
+                  <input className="ui-input date-picker" type="date" aria-label="Choose date from calendar" value={form.loadDatePicker} onChange={(event) => handleDatePickerChange(event.target.value)} disabled={!isAdmin} />
                 </div>
               </div>
               <div className="entry-actions edit-existing-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => navigate('/search')}>Cancel</button>
-                <button type="button" className="btn btn-danger" onClick={handleDelete} disabled={deleting || saving}>{deleting ? 'Deleting...' : 'Delete product'}</button>
-                <button type="submit" className="btn btn-primary" disabled={saving || deleting}>{saving ? 'Saving...' : 'Save changes'}</button>
+                <button type="button" className="btn btn-danger" onClick={handleDelete} disabled={deleting || saving || !isAdmin}>{deleting ? 'Deleting...' : 'Delete product'}</button>
+                <button type="submit" className="btn btn-primary" disabled={saving || deleting || !isAdmin}>{saving ? 'Saving...' : 'Save changes'}</button>
               </div>
             </form>
           ))}

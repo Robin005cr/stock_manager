@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
-import { fetchFilterOptions, fetchInventory } from '../api/inventory';
+import { deleteInventoryItem, fetchFilterOptions, fetchInventory } from '../api/inventory';
 import { defaultMetadata } from '../data/defaultMetadata';
 import { usePinnedProducts } from '../state/PinnedProductsContext';
 import { exportResults } from '../utils/exportUtils';
@@ -32,6 +32,7 @@ function FilterSelect({ id, label, value, onChange, options }) {
 }
 
 export default function Search() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [measurementValue, setMeasurementValue] = useState('');
@@ -41,6 +42,7 @@ export default function Search() {
   const [dateValue, setDateValue] = useState('');
   const [exportFormat, setExportFormat] = useState('csv');
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   const [results, setResults] = useState([]);
   const [catalogTotal, setCatalogTotal] = useState(0);
@@ -48,6 +50,15 @@ export default function Search() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { isPinned, togglePinned } = usePinnedProducts();
+
+  const currentUser = useMemo(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('sm_user') || 'null');
+    } catch {
+      return null;
+    }
+  }, []);
+  const isAdmin = currentUser?.role === 'admin';
 
   const categoryChips = useMemo(
     () => ['All', ...(filterOptions.categories || [])],
@@ -128,6 +139,19 @@ export default function Search() {
 
   function handleExport() {
     exportResults(results, exportFormat);
+  }
+
+  async function handleDeleteConfirmed() {
+    if (!itemToDelete) return;
+
+    try {
+      await deleteInventoryItem(itemToDelete.id);
+      setResults((previous) => previous.filter((item) => item.id !== itemToDelete.id));
+      setItemToDelete(null);
+    } catch (err) {
+      setError(err.message || 'Could not delete the product.');
+      setItemToDelete(null);
+    }
   }
 
   return (
@@ -294,7 +318,8 @@ export default function Search() {
                     <th>Qty</th>
                     <th>Godown</th>
                     <th>Load date</th>
-                    <th aria-label="Edit product" />
+                    <th aria-label="Edit product">Edit</th>
+                    <th aria-label="Delete product">Delete</th>
                     <th aria-label="Pin product" />
                   </tr>
                 </thead>
@@ -313,9 +338,24 @@ export default function Search() {
                       <td>{item.godown}</td>
                       <td>{item.dateOfLoad}</td>
                       <td className="search-edit-cell">
-                        <Link className="btn btn-secondary search-edit-button" to={`/edit-existing/${item.id}`}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary search-edit-button"
+                          disabled={!isAdmin}
+                          onClick={() => navigate(`/edit-existing/${item.id}`)}
+                        >
                           Edit
-                        </Link>
+                        </button>
+                      </td>
+                      <td className="search-delete-cell">
+                        <button
+                          type="button"
+                          className="btn btn-danger search-delete-button"
+                          disabled={!isAdmin}
+                          onClick={() => setItemToDelete(item)}
+                        >
+                          Delete
+                        </button>
                       </td>
                       <td className="pin-cell">
                         <button
@@ -336,6 +376,23 @@ export default function Search() {
           )}
         </div>
       </div>
+
+      {itemToDelete && (
+        <div className="delete-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title">
+          <div className="delete-confirm-card">
+            <h3 id="delete-confirm-title">Delete product</h3>
+            <p>Are you really want to delete this product from the list?</p>
+            <div className="delete-confirm-actions">
+              <button type="button" className="btn btn-secondary" onClick={() => setItemToDelete(null)}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-danger" onClick={handleDeleteConfirmed}>
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
