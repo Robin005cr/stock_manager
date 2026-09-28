@@ -68,16 +68,18 @@ http://localhost:5173
 
 During local development, Vite proxies `/api` requests to the backend at port `8000`.
 
-## Save a Product
+## Sign In and Roles
 
-1. Open the frontend URL.
-2. Select **Create account** on the login screen.
-3. Register with an email and a password containing at least 8 characters, one number, and one special character.
-4. Sign in using the selected account role.
-5. Open **Update record**.
-6. Enter the product details and submit the form.
+The backend creates these demo accounts on startup when the email addresses are not already registered:
 
-The frontend sends the product to `POST /api/inventory`. The backend validates the data and stores it in MongoDB.
+| Role | Email | Password |
+| --- | --- | --- |
+| Admin | `admin@gmail.com` | `Password1@` |
+| Viewer | `viewer@gmail.com` | `Password2@` |
+
+Admins can add metadata, update records, and edit or delete inventory. Viewers can search inventory and manage pinned products, but cannot modify inventory or metadata. New accounts created from the sign-in page are viewers.
+
+To add a product, sign in as admin, open **Update record**, enter the product details, and submit. The backend validates the data and stores it in MongoDB.
 
 ## Verify the Data
 

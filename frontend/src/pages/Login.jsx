@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import { login, register, saveSession } from '../api/auth';
 import './Login.css';
@@ -7,12 +8,13 @@ const emailRegex = /^\S+@\S+\.\S+$/;
 const passwordRegex = /^(?=.{8,}$)(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).*$/;
 
 export default function Login() {
+  const navigate = useNavigate();
   const [role, setRole] = useState('viewer');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [message, setMessage] = useState('');
 
   const [showResetModal, setShowResetModal] = useState(false);
   const [currentPwd, setCurrentPwd] = useState('');
@@ -24,14 +26,12 @@ export default function Login() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPwd, setSignupPwd] = useState('');
   const [signupConfirm, setSignupConfirm] = useState('');
-  const [signupRole, setSignupRole] = useState('viewer');
   const [signupError, setSignupError] = useState('');
 
   function clearErrors() {
     setEmailError('');
     setPasswordError('');
     setResetError('');
-    setMessage('');
   }
 
   async function handleSubmit(event) {
@@ -52,8 +52,7 @@ export default function Login() {
     try {
       const data = await login({ email: email.trim(), password, role });
       saveSession(data.token, data.user);
-      const roleLabel = data.user.role === 'admin' ? 'Admin' : 'Viewer';
-      setMessage(`Signed in as ${roleLabel} (${data.user.email}).`);
+      navigate('/search', { replace: true });
     } catch (err) {
       setPasswordError(err.message || 'Sign in failed.');
     }
@@ -116,15 +115,14 @@ export default function Login() {
       const data = await register({
         email: signupEmail.trim(),
         password: signupPwd,
-        role: signupRole,
+        role: 'viewer',
       });
       saveSession(data.token, data.user);
       setShowSignupModal(false);
       setSignupEmail('');
       setSignupPwd('');
       setSignupConfirm('');
-      setSignupRole('viewer');
-      setMessage(`Account created for ${data.user.email}. You are signed in.`);
+      navigate('/search', { replace: true });
     } catch (err) {
       setSignupError(err.message || 'Could not create account.');
     }
@@ -136,6 +134,23 @@ export default function Login() {
       <div className="app-content">
         <div className="page-card login-card">
           <form onSubmit={handleSubmit} noValidate className="login-form">
+            <div className="demo-credentials" aria-label="Demo account credentials">
+              <button type="button" className="link-btn" onClick={() => {
+                setRole('admin');
+                setEmail('admin@gmail.com');
+                setPassword('Password1@');
+              }}>
+                Admin: admin@gmail.com / Password1@
+              </button>
+              <button type="button" className="link-btn" onClick={() => {
+                setRole('viewer');
+                setEmail('viewer@gmail.com');
+                setPassword('Password2@');
+              }}>
+                Viewer: viewer@gmail.com / Password2@
+              </button>
+            </div>
+
             <div className="role-group" role="radiogroup" aria-label="Account role">
               <label className="role-chip">
                 <input
@@ -180,13 +195,21 @@ export default function Login() {
                 className="ui-input"
                 id="password"
                 name="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="8+ chars, 1 number, 1 special"
                 required
                 minLength={8}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <label className="password-visibility">
+                <input
+                  type="checkbox"
+                  checked={showPassword}
+                  onChange={(event) => setShowPassword(event.target.checked)}
+                />
+                Show password
+              </label>
               {passwordError && <small className="ui-error">{passwordError}</small>}
             </div>
 
@@ -207,11 +230,6 @@ export default function Login() {
             </div>
           </form>
 
-          {message && (
-            <div className="alert-banner success login-message" role="status">
-              {message}
-            </div>
-          )}
         </div>
       </div>
 
@@ -318,28 +336,7 @@ export default function Login() {
                 onChange={(e) => setSignupConfirm(e.target.value)}
               />
             </div>
-            <div className="role-group" role="radiogroup" aria-label="Signup role">
-              <label className="role-chip">
-                <input
-                  type="radio"
-                  name="signupRole"
-                  value="admin"
-                  checked={signupRole === 'admin'}
-                  onChange={() => setSignupRole('admin')}
-                />
-                Admin
-              </label>
-              <label className="role-chip">
-                <input
-                  type="radio"
-                  name="signupRole"
-                  value="viewer"
-                  checked={signupRole === 'viewer'}
-                  onChange={() => setSignupRole('viewer')}
-                />
-                Viewer
-              </label>
-            </div>
+            <p>New accounts are created with viewer access.</p>
             <div className="modal-actions">
               <button
                 type="button"
@@ -349,7 +346,6 @@ export default function Login() {
                   setSignupEmail('');
                   setSignupPwd('');
                   setSignupConfirm('');
-                  setSignupRole('viewer');
                   setSignupError('');
                 }}
               >

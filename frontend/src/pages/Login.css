@@ -6,6 +6,26 @@
   margin-bottom: 18px;
 }
 
+.demo-credentials {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.password-visibility {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.password-visibility input {
+  accent-color: var(--color-primary);
+}
+
 .role-group {
   display: flex;
   gap: 10px;

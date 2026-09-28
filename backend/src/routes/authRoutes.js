@@ -16,7 +16,7 @@ router.post('/register', async (req, res, next) => {
   try {
     const email = req.body.email?.trim().toLowerCase();
     const password = req.body.password;
-    const role = req.body.role === 'admin' ? 'admin' : 'viewer';
+    const role = 'viewer';
 
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required.' });

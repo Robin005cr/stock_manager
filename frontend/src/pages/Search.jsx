@@ -137,8 +137,13 @@ export default function Search() {
     loadInventory(filters, false);
   }, [filters, loadInventory]);
 
-  function handleExport() {
-    exportResults(results, exportFormat);
+  async function handleExport() {
+    setError('');
+    try {
+      await exportResults(results, exportFormat);
+    } catch (err) {
+      setError(err.message || 'Could not export inventory results.');
+    }
   }
 
   async function handleDeleteConfirmed() {

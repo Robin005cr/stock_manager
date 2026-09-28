@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { InventoryItem } from '../models/InventoryItem.js';
 import { MetadataOption } from '../models/MetadataOption.js';
 import { buildInventoryQuery } from '../utils/inventoryQuery.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 import defaultMetadata from '../data/defaultMetadata.json' with { type: 'json' };
 
 const router = Router();
@@ -88,7 +88,7 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-router.post('/', async (req, res, next) => {
+router.post('/', requireRole('admin'), async (req, res, next) => {
   try {
     const { measurement, productName, productCode, productImage, company, category, quantity, godown, dateOfLoad } = req.body;
 
@@ -119,7 +119,7 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', requireRole('admin'), async (req, res, next) => {
   try {
     const { measurement, productName, productCode, productImage, company, category, quantity, godown, dateOfLoad } = req.body;
 
@@ -155,7 +155,7 @@ router.put('/:id', async (req, res, next) => {
   }
 });
 
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireRole('admin'), async (req, res, next) => {
   try {
     const item = await InventoryItem.findByIdAndDelete(req.params.id);
     if (!item) return res.status(404).json({ message: 'Inventory item not found.' });

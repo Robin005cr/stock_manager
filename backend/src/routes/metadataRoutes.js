@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { MetadataOption } from '../models/MetadataOption.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 import { isDuplicateMetadataValue, metadataValueSignature, normalizeMetadataValue } from '../utils/metadataValidation.js';
 
 const router = Router();
@@ -25,7 +25,7 @@ router.get('/:kind', async (req, res, next) => {
   }
 });
 
-router.post('/:kind', async (req, res, next) => {
+router.post('/:kind', requireRole('admin'), async (req, res, next) => {
   try {
     const kind = String(req.params.kind || '').toLowerCase();
     const rawValue = normalizeMetadataValue(req.body?.value);
@@ -58,7 +58,7 @@ router.post('/:kind', async (req, res, next) => {
   }
 });
 
-router.put('/:kind/:id', async (req, res, next) => {
+router.put('/:kind/:id', requireRole('admin'), async (req, res, next) => {
   try {
     const kind = String(req.params.kind || '').toLowerCase();
     const rawValue = normalizeMetadataValue(req.body?.value);
@@ -103,7 +103,7 @@ router.put('/:kind/:id', async (req, res, next) => {
   }
 });
 
-router.delete('/:kind/:id', async (req, res, next) => {
+router.delete('/:kind/:id', requireRole('admin'), async (req, res, next) => {
   try {
     const kind = String(req.params.kind || '').toLowerCase();
     if (!['category', 'company', 'measurement'].includes(kind)) {

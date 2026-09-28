@@ -1,16 +1,20 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { clearSession } from '../api/auth';
+import { clearSession, getSessionUser } from '../api/auth';
 
-const navItems = [
+const adminNavItems = [
   { to: '/', label: 'Update record', icon: '✎', end: true },
+  { to: '/meta-details', label: 'Add meta details', icon: '▣' },
+];
+
+const sharedNavItems = [
   { to: '/search', label: 'Search inventory', icon: '⌕' },
   { to: '/pinned-products', label: 'Pinned Products', icon: '📌' },
-  { to: '/meta-details', label: 'Add meta details', icon: '▣' },
-  { to: '/login', label: 'Sign in', icon: '◉' },
 ];
 
 export default function AppLayout() {
   const navigate = useNavigate();
+  const user = getSessionUser();
+  const navItems = user?.role === 'admin' ? [...adminNavItems, ...sharedNavItems] : sharedNavItems;
 
   function handleLogout() {
     clearSession();

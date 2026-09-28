@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { config } from './config.js';
 import { connectDb } from './db.js';
-import { seedInventoryIfEmpty } from './seed.js';
+import { seedDefaultUsersIfMissing, seedInventoryIfEmpty } from './seed.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import metadataRoutes from './routes/metadataRoutes.js';
@@ -28,6 +28,7 @@ app.use((error, _req, res, _next) => {
 async function startServer() {
   try {
     await connectDb();
+    await seedDefaultUsersIfMissing();
     await seedInventoryIfEmpty();
     app.listen(config.port, () => {
       console.log(`API listening on http://localhost:${config.port}`);

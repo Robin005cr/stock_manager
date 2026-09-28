@@ -23,3 +23,15 @@ export function clearSession() {
   sessionStorage.removeItem('sm_token');
   sessionStorage.removeItem('sm_user');
 }
+
+export function getSessionUser() {
+  try {
+    return JSON.parse(sessionStorage.getItem('sm_user') || 'null');
+  } catch {
+    return null;
+  }
+}
+
+export function hasSession() {
+  return Boolean(sessionStorage.getItem('sm_token') && getSessionUser());
+}
