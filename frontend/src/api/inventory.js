@@ -44,10 +44,10 @@ export function updateInventoryItem(id, payload) {
   });
 }
 
-export function updateInventoryStock(id, direction) {
+export function updateInventoryStock(id, direction, amount) {
   return apiRequest(`/api/inventory/${id}/stock`, {
     method: 'PATCH',
-    body: JSON.stringify({ direction }),
+    body: JSON.stringify({ direction, amount }),
   });
 }
 

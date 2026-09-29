@@ -157,17 +157,20 @@ router.put('/:id', requireRole('admin'), async (req, res, next) => {
 
 router.patch('/:id/stock', requireRole('admin'), async (req, res, next) => {
   try {
-    const { direction } = req.body;
+    const { direction, amount } = req.body;
     if (direction !== 'increment' && direction !== 'decrement') {
       return res.status(400).json({ message: 'Stock direction must be increment or decrement.' });
+    }
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+      return res.status(400).json({ message: 'Quantity must be a positive whole number.' });
     }
 
     const isDecrement = direction === 'decrement';
     const item = await InventoryItem.findOneAndUpdate(
       isDecrement
-        ? { _id: req.params.id, quantity: { $gt: 0 } }
+        ? { _id: req.params.id, quantity: { $gte: amount } }
         : { _id: req.params.id },
-      { $inc: { quantity: isDecrement ? -1 : 1 } },
+      { $inc: { quantity: isDecrement ? -amount : amount } },
       { new: true, runValidators: true },
     );
 

@@ -280,7 +280,8 @@
   opacity: 0.5;
 }
 
-.delete-confirm-overlay {
+.delete-confirm-overlay,
+.stock-adjust-overlay {
   position: fixed;
   inset: 0;
   display: flex;
@@ -290,7 +291,8 @@
   z-index: 2000;
 }
 
-.delete-confirm-card {
+.delete-confirm-card,
+.stock-adjust-card {
   width: min(420px, calc(100vw - 32px));
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -299,22 +301,35 @@
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
 }
 
-.delete-confirm-card h3 {
+.delete-confirm-card h3,
+.stock-adjust-card h3 {
   margin: 0 0 12px;
   color: var(--color-text);
   font-size: 22px;
 }
 
-.delete-confirm-card p {
+.delete-confirm-card p,
+.stock-adjust-card > .stock-adjust-summary {
   margin: 0 0 20px;
   color: var(--color-text-muted);
   line-height: 1.5;
 }
 
-.delete-confirm-actions {
+.delete-confirm-actions,
+.stock-adjust-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.stock-adjust-field {
+  margin-bottom: 16px;
+}
+
+.stock-adjust-error {
+  margin: 0 0 16px;
+  color: var(--color-error);
+  font-size: 13px;
 }
 
 @media (max-width: 640px) {

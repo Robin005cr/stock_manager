@@ -148,7 +148,7 @@ export default function EditExisting() {
     setSubmitError('');
     try {
       await deleteInventoryItem(id);
-      navigate('/search', { replace: true });
+      navigate('/search', { replace: true, viewTransition: true });
     } catch (error) {
       setSubmitError(error.message || 'Could not delete the product.');
       setDeleting(false);
@@ -164,7 +164,7 @@ export default function EditExisting() {
             <div className="edit-empty-state">
               <h2>Select a product to edit</h2>
               <p>Open Search inventory and choose Edit beside the product you want to change.</p>
-              <Link className="btn btn-primary" to="/search">Open Search inventory</Link>
+              <Link className="btn btn-primary" to="/search" viewTransition>Open Search inventory</Link>
             </div>
           )}
           {submitError && <div className="alert-banner entry-error-banner" role="alert">{submitError}</div>}
@@ -236,7 +236,7 @@ export default function EditExisting() {
                 </div>
               </div>
               <div className="entry-actions edit-existing-actions">
-                <button type="button" className="btn btn-secondary" onClick={() => navigate('/search')}>Cancel</button>
+                <button type="button" className="btn btn-secondary" onClick={() => navigate('/search', { viewTransition: true })}>Cancel</button>
                 <button type="button" className="btn btn-danger" onClick={handleDelete} disabled={deleting || saving || !isAdmin}>{deleting ? 'Deleting...' : 'Delete product'}</button>
                 <button type="submit" className="btn btn-primary" disabled={saving || deleting || !isAdmin}>{saving ? 'Saving...' : 'Save changes'}</button>
               </div>

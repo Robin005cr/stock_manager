@@ -73,7 +73,7 @@ export default function Login() {
           try {
             const data = await googleLogin(credential);
             saveSession(data.token, data.user);
-            navigate('/search', { replace: true });
+            navigate('/search', { replace: true, viewTransition: true });
           } catch (err) {
             setGoogleError(err.message || 'Google sign-in failed.');
           }
@@ -130,7 +130,7 @@ export default function Login() {
     try {
       const data = await login({ email: email.trim(), password, role });
       saveSession(data.token, data.user);
-      navigate('/search', { replace: true });
+      navigate('/search', { replace: true, viewTransition: true });
     } catch (err) {
       setPasswordError(err.message || 'Sign in failed.');
     }
@@ -205,7 +205,7 @@ export default function Login() {
       setSignupConfirm('');
       setShowSignupPwd(false);
       setShowSignupConfirm(false);
-      navigate('/search', { replace: true });
+      navigate('/search', { replace: true, viewTransition: true });
     } catch (err) {
       setSignupError(err.message || 'Could not create account.');
     }

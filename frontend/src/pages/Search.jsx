@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import { deleteInventoryItem, fetchFilterOptions, fetchInventory, updateInventoryStock } from '../api/inventory';
@@ -43,10 +43,14 @@ export default function Search() {
   const [exportFormat, setExportFormat] = useState('csv');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [stockAdjustment, setStockAdjustment] = useState(null);
+  const [stockAdjustmentAmount, setStockAdjustmentAmount] = useState('1');
+  const [stockAdjustmentError, setStockAdjustmentError] = useState('');
   const [updatingStock, setUpdatingStock] = useState({});
 
   const [results, setResults] = useState([]);
   const [catalogTotal, setCatalogTotal] = useState(0);
+  const latestInventoryRequest = useRef(0);
   const [filterOptions, setFilterOptions] = useState(emptyFilterOptions);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -94,20 +98,26 @@ export default function Search() {
     setDateValue('');
   }
 
-  const loadInventory = useCallback(async (activeFilters, trackCatalog = false) => {
+  const loadInventory = useCallback(async (activeFilters) => {
+    const requestId = ++latestInventoryRequest.current;
+    const trackCatalog = Object.values(activeFilters).every((value) => !value);
     setLoading(true);
     setError('');
     try {
       const data = await fetchInventory(activeFilters);
-      setResults(data.items);
       if (trackCatalog) {
         setCatalogTotal(data.total);
       }
+      if (requestId !== latestInventoryRequest.current) return;
+      setResults(data.items);
     } catch (err) {
+      if (requestId !== latestInventoryRequest.current) return;
       setError(err.message || 'Could not load inventory from the server.');
       setResults([]);
     } finally {
-      setLoading(false);
+      if (requestId === latestInventoryRequest.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -131,17 +141,23 @@ export default function Search() {
           godowns: defaultMetadata.godowns,
         }),
       );
-    loadInventory({}, true);
   }, [loadInventory]);
 
   useEffect(() => {
-    loadInventory(filters, false);
+    loadInventory(filters);
   }, [filters, loadInventory]);
 
   async function handleExport() {
     setError('');
+    const fileName = window.prompt('Enter a name for the export:', 'inventory-export');
+    if (fileName === null) return;
+    if (!fileName.trim()) {
+      setError('Enter a name for the export.');
+      return;
+    }
+
     try {
-      await exportResults(results, exportFormat);
+      await exportResults(results, exportFormat, fileName);
     } catch (err) {
       setError(err.message || 'Could not export inventory results.');
     }
@@ -160,15 +176,32 @@ export default function Search() {
     }
   }
 
-  async function handleStockUpdate(item, direction) {
-    setError('');
+  function openStockAdjustment(item, direction) {
+    setStockAdjustment({ item, direction });
+    setStockAdjustmentAmount('1');
+    setStockAdjustmentError('');
+  }
+
+  async function handleStockUpdate(event) {
+    event.preventDefault();
+    if (!stockAdjustment) return;
+
+    const amount = Number(stockAdjustmentAmount);
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+      setStockAdjustmentError('Enter a positive whole number.');
+      return;
+    }
+
+    const { item, direction } = stockAdjustment;
+    setStockAdjustmentError('');
     setUpdatingStock((previous) => ({ ...previous, [item.id]: true }));
 
     try {
-      await updateInventoryStock(item.id, direction);
+      await updateInventoryStock(item.id, direction, amount);
+      setStockAdjustment(null);
       await loadInventory(filters, false);
     } catch (err) {
-      setError(err.message || 'Could not update stock.');
+      setStockAdjustmentError(err.message || 'Could not update stock.');
     } finally {
       setUpdatingStock((previous) => ({ ...previous, [item.id]: false }));
     }
@@ -362,7 +395,7 @@ export default function Search() {
                             type="button"
                             className="stock-update-button stock-increment-button"
                             disabled={!isAdmin || updatingStock[item.id]}
-                            onClick={() => handleStockUpdate(item, 'increment')}
+                            onClick={() => openStockAdjustment(item, 'increment')}
                             aria-label={`Increase stock for ${item.productName}`}
                             title="Increase stock"
                           >
@@ -372,7 +405,7 @@ export default function Search() {
                             type="button"
                             className="stock-update-button stock-decrement-button"
                             disabled={!isAdmin || updatingStock[item.id]}
-                            onClick={() => handleStockUpdate(item, 'decrement')}
+                            onClick={() => openStockAdjustment(item, 'decrement')}
                             aria-label={`Decrease stock for ${item.productName}`}
                             title="Decrease stock"
                           >
@@ -387,7 +420,7 @@ export default function Search() {
                           type="button"
                           className="btn btn-secondary search-edit-button"
                           disabled={!isAdmin}
-                          onClick={() => navigate(`/edit-existing/${item.id}`)}
+                          onClick={() => navigate(`/edit-existing/${item.id}`, { viewTransition: true })}
                         >
                           Edit
                         </button>
@@ -421,6 +454,52 @@ export default function Search() {
           )}
         </div>
       </div>
+
+      {stockAdjustment && (
+        <div className="stock-adjust-overlay" role="dialog" aria-modal="true" aria-labelledby="stock-adjust-title">
+          <form className="stock-adjust-card" onSubmit={handleStockUpdate}>
+            <h3 id="stock-adjust-title">
+              {stockAdjustment.direction === 'increment' ? 'Add stock' : 'Decrease stock'}
+            </h3>
+            <p className="stock-adjust-summary">
+              {stockAdjustment.item.productName} · Current stock: {stockAdjustment.item.quantity}
+            </p>
+            <div className="field stock-adjust-field">
+              <label htmlFor="stock-adjustment-amount">
+                Quantity to {stockAdjustment.direction === 'increment' ? 'add' : 'decrease'}
+              </label>
+              <input
+                autoFocus
+                className="ui-input"
+                id="stock-adjustment-amount"
+                type="number"
+                min="1"
+                step="1"
+                value={stockAdjustmentAmount}
+                onChange={(event) => setStockAdjustmentAmount(event.target.value)}
+              />
+            </div>
+            {stockAdjustmentError && (
+              <p className="stock-adjust-error" role="alert">{stockAdjustmentError}</p>
+            )}
+            <div className="stock-adjust-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setStockAdjustment(null);
+                  setStockAdjustmentError('');
+                }}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary" disabled={updatingStock[stockAdjustment.item.id]}>
+                {updatingStock[stockAdjustment.item.id] ? 'Updating...' : 'Update stock'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {itemToDelete && (
         <div className="delete-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title">

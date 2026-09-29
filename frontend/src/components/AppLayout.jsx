@@ -19,7 +19,7 @@ export default function AppLayout() {
 
   function handleLogout() {
     clearSession();
-    navigate('/login');
+    navigate('/login', { viewTransition: true });
   }
 
   return (
@@ -40,6 +40,7 @@ export default function AppLayout() {
               key={to}
               to={to}
               end={end}
+              viewTransition
               className={({ isActive }) => `app-nav-link${isActive ? ' active' : ''}`}
             >
               <span className="app-nav-icon" aria-hidden="true">

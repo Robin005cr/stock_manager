@@ -64,13 +64,18 @@ function downloadFile(blob, filename) {
   window.setTimeout(() => URL.revokeObjectURL(fileUrl), 1000);
 }
 
-export async function exportResults(results, format) {
+export async function exportResults(results, format, requestedFileName = 'inventory-export') {
   if (results.length === 0) {
     alert('No results to export.');
     return;
   }
 
-  const fileNameBase = 'inventory-export';
+  const fileNameBase = requestedFileName
+    .trim()
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-')
+    .replace(/[. ]+$/, '')
+    .replace(/\.(csv|xlsx|pdf)$/i, '') || 'inventory-export';
+
   if (format === 'csv') {
     const csv = buildCsv(results);
     downloadFile(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), `${fileNameBase}.csv`);
