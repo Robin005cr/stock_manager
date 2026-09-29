@@ -32,7 +32,7 @@
 .pin-button:hover,
 .pin-button:focus-visible {
   border-color: var(--color-border);
-  background: #f8fafc;
+  background: var(--color-surface-muted);
   filter: none;
   opacity: 1;
 }
@@ -42,8 +42,8 @@
 }
 
 .pin-button.pinned {
-  border-color: #bfdbfe;
-  background: #eff6ff;
+  border-color: var(--color-pinned-border);
+  background: var(--color-pinned-surface);
   filter: none;
   opacity: 1;
 }

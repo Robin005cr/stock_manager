@@ -15,7 +15,7 @@
   padding: 14px 18px;
   border: 1px solid var(--color-border);
   border-radius: 14px;
-  background: #f8fafc;
+  background: var(--color-surface-muted);
   color: var(--color-text);
   font-family: inherit;
   font-size: 15px;
@@ -50,8 +50,8 @@
 
 .filter-toggle:hover,
 .filter-toggle.active {
-  border-color: #93c5fd;
-  background: #eff6ff;
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-surface);
   color: var(--color-primary-hover);
 }
 
@@ -94,7 +94,7 @@
 .category-chip {
   appearance: none;
   border: 1px solid var(--color-border);
-  background: #f8fafc;
+  background: var(--color-surface-muted);
   color: var(--color-text-muted);
   border-radius: 999px;
   padding: 10px 16px;
@@ -111,8 +111,8 @@
 }
 
 .category-chip.active {
-  background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
-  border-color: #93c5fd;
+  background: var(--color-accent-surface);
+  border-color: var(--color-accent-border);
   color: var(--color-primary-hover);
   box-shadow: 0 8px 20px rgba(59, 130, 246, 0.12);
 }
@@ -121,7 +121,7 @@
   padding: 18px;
   border: 1px solid var(--color-border);
   border-radius: 14px;
-  background: #f8fafc;
+  background: var(--color-surface-muted);
 }
 
 .filter-drawer-header {
@@ -190,7 +190,7 @@
 .search-error-banner {
   background: var(--color-error-bg);
   color: var(--color-error);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--color-error-border);
   margin-bottom: 20px;
 }
 
@@ -211,8 +211,59 @@
 }
 
 .search-edit-cell,
-.search-delete-cell {
+.search-delete-cell,
+.search-stock-cell {
   white-space: nowrap;
+}
+
+.stock-update-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stock-update-button {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stock-increment-button {
+  color: var(--color-increment);
+}
+
+.stock-increment-button:hover:not(:disabled) {
+  background: var(--color-increment-surface);
+  border-color: var(--color-increment-border);
+}
+
+.stock-decrement-button {
+  color: var(--color-decrement);
+}
+
+.stock-decrement-button:hover:not(:disabled) {
+  background: var(--color-decrement-surface);
+  border-color: var(--color-decrement-border);
+}
+
+.stock-update-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.stock-update-button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .search-edit-button,
@@ -241,7 +292,7 @@
 
 .delete-confirm-card {
   width: min(420px, calc(100vw - 32px));
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 18px;
   padding: 24px;

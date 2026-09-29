@@ -5,7 +5,7 @@
 .entry-error-banner {
   background: var(--color-error-bg);
   color: var(--color-error);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--color-error-border);
 }
 
 .entry-form-grid {

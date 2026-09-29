@@ -100,6 +100,10 @@ export default function Metadata() {
   }
 
   async function handleDelete(kind, optionId) {
+    if (!window.confirm('Are you sure to delete?')) {
+      return;
+    }
+
     try {
       await deleteMetadata(kind, optionId);
       setError('');

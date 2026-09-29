@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { clearSession, getSessionUser } from '../api/auth';
+import ThemeToggle from './ThemeToggle';
 
 const adminNavItems = [
   { to: '/', label: 'Update record', icon: '✎', end: true },
@@ -52,6 +53,7 @@ export default function AppLayout() {
       </aside>
       <div className="app-main">
         <div className="top-bar">
+          <ThemeToggle />
           <button type="button" className="logout-button" onClick={handleLogout}>
             Logout
           </button>

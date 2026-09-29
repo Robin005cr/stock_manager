@@ -118,8 +118,8 @@
 }
 
 .btn-danger {
-  border: 1px solid rgba(220, 38, 38, 0.3);
-  background: #fff1f2;
+  border: 1px solid var(--color-danger-border);
+  background: var(--color-danger-surface);
   color: var(--color-error);
 }
 
@@ -128,5 +128,5 @@
 }
 
 .btn-danger:hover {
-  background: #ffe4e6;
+  background: var(--color-danger-surface-hover);
 }

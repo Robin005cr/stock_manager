@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
-import { deleteInventoryItem, fetchFilterOptions, fetchInventory } from '../api/inventory';
+import { deleteInventoryItem, fetchFilterOptions, fetchInventory, updateInventoryStock } from '../api/inventory';
 import { defaultMetadata } from '../data/defaultMetadata';
 import { usePinnedProducts } from '../state/PinnedProductsContext';
 import { exportResults } from '../utils/exportUtils';
@@ -43,6 +43,7 @@ export default function Search() {
   const [exportFormat, setExportFormat] = useState('csv');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [updatingStock, setUpdatingStock] = useState({});
 
   const [results, setResults] = useState([]);
   const [catalogTotal, setCatalogTotal] = useState(0);
@@ -156,6 +157,20 @@ export default function Search() {
     } catch (err) {
       setError(err.message || 'Could not delete the product.');
       setItemToDelete(null);
+    }
+  }
+
+  async function handleStockUpdate(item, direction) {
+    setError('');
+    setUpdatingStock((previous) => ({ ...previous, [item.id]: true }));
+
+    try {
+      await updateInventoryStock(item.id, direction);
+      await loadInventory(filters, false);
+    } catch (err) {
+      setError(err.message || 'Could not update stock.');
+    } finally {
+      setUpdatingStock((previous) => ({ ...previous, [item.id]: false }));
     }
   }
 
@@ -321,6 +336,7 @@ export default function Search() {
                     <th>Company</th>
                     <th>Category</th>
                     <th>Qty</th>
+                    <th>Stock update</th>
                     <th>Godown</th>
                     <th>Load date</th>
                     <th aria-label="Edit product">Edit</th>
@@ -340,6 +356,30 @@ export default function Search() {
                         <span className="category-pill">{item.category}</span>
                       </td>
                       <td>{item.quantity}</td>
+                      <td className="search-stock-cell">
+                        <div className="stock-update-buttons">
+                          <button
+                            type="button"
+                            className="stock-update-button stock-increment-button"
+                            disabled={!isAdmin || updatingStock[item.id]}
+                            onClick={() => handleStockUpdate(item, 'increment')}
+                            aria-label={`Increase stock for ${item.productName}`}
+                            title="Increase stock"
+                          >
+                            <span aria-hidden="true">+</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="stock-update-button stock-decrement-button"
+                            disabled={!isAdmin || updatingStock[item.id]}
+                            onClick={() => handleStockUpdate(item, 'decrement')}
+                            aria-label={`Decrease stock for ${item.productName}`}
+                            title="Decrease stock"
+                          >
+                            <span aria-hidden="true">-</span>
+                          </button>
+                        </div>
+                      </td>
                       <td>{item.godown}</td>
                       <td>{item.dateOfLoad}</td>
                       <td className="search-edit-cell">

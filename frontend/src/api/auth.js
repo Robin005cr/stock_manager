@@ -7,6 +7,13 @@ export function login({ email, password, role }) {
   });
 }
 
+export function googleLogin(credential) {
+  return apiRequest('/api/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ credential }),
+  });
+}
+
 export function register({ email, password, role }) {
   return apiRequest('/api/auth/register', {
     method: 'POST',

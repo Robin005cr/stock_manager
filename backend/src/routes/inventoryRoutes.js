@@ -155,6 +155,34 @@ router.put('/:id', requireRole('admin'), async (req, res, next) => {
   }
 });
 
+router.patch('/:id/stock', requireRole('admin'), async (req, res, next) => {
+  try {
+    const { direction } = req.body;
+    if (direction !== 'increment' && direction !== 'decrement') {
+      return res.status(400).json({ message: 'Stock direction must be increment or decrement.' });
+    }
+
+    const isDecrement = direction === 'decrement';
+    const item = await InventoryItem.findOneAndUpdate(
+      isDecrement
+        ? { _id: req.params.id, quantity: { $gt: 0 } }
+        : { _id: req.params.id },
+      { $inc: { quantity: isDecrement ? -1 : 1 } },
+      { new: true, runValidators: true },
+    );
+
+    if (!item) {
+      const existingItem = await InventoryItem.findById(req.params.id).select('_id').lean();
+      if (!existingItem) return res.status(404).json({ message: 'Inventory item not found.' });
+      return res.status(400).json({ message: 'The stock will be negative operation not possible' });
+    }
+
+    res.json({ id: item._id.toString(), quantity: item.quantity });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.delete('/:id', requireRole('admin'), async (req, res, next) => {
   try {
     const item = await InventoryItem.findByIdAndDelete(req.params.id);

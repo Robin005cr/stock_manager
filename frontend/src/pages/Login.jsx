@@ -1,14 +1,38 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
-import { login, register, saveSession } from '../api/auth';
+import { googleLogin, login, register, saveSession } from '../api/auth';
+import ThemeToggle from '../components/ThemeToggle';
 import './Login.css';
 
 const emailRegex = /^\S+@\S+\.\S+$/;
 const passwordRegex = /^(?=.{8,}$)(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).*$/;
 
+function PasswordToggle({ visible, label, onToggle }) {
+  const action = visible ? 'Hide' : 'Show';
+
+  return (
+    <button
+      type="button"
+      className="password-toggle"
+      aria-label={`${action} ${label}`}
+      aria-pressed={visible}
+      title={`${action} ${label}`}
+      onClick={onToggle}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M2.2 12s3.6-6.5 9.8-6.5 9.8 6.5 9.8 6.5-3.6 6.5-9.8 6.5S2.2 12 2.2 12Z" />
+        <circle cx="12" cy="12" r="3" />
+        {!visible && <path d="m3 3 18 18" />}
+      </svg>
+    </button>
+  );
+}
+
 export default function Login() {
   const navigate = useNavigate();
+  const googleButtonRef = useRef(null);
+  const [googleError, setGoogleError] = useState('');
   const [role, setRole] = useState('viewer');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,13 +44,67 @@ export default function Login() {
   const [currentPwd, setCurrentPwd] = useState('');
   const [newPwd, setNewPwd] = useState('');
   const [confirmPwd, setConfirmPwd] = useState('');
+  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [resetError, setResetError] = useState('');
 
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPwd, setSignupPwd] = useState('');
   const [signupConfirm, setSignupConfirm] = useState('');
+  const [showSignupPwd, setShowSignupPwd] = useState(false);
+  const [showSignupConfirm, setShowSignupConfirm] = useState(false);
   const [signupError, setSignupError] = useState('');
+
+  useEffect(() => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    const buttonElement = googleButtonRef.current;
+    if (!clientId || !buttonElement) return undefined;
+
+    function initializeGoogleSignIn() {
+      const identity = window.google?.accounts?.id;
+      if (!identity) return;
+
+      identity.initialize({
+        client_id: clientId,
+        callback: async ({ credential }) => {
+          setGoogleError('');
+          try {
+            const data = await googleLogin(credential);
+            saveSession(data.token, data.user);
+            navigate('/search', { replace: true });
+          } catch (err) {
+            setGoogleError(err.message || 'Google sign-in failed.');
+          }
+        },
+      });
+      identity.renderButton(buttonElement, {
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'rectangular',
+        width: 372,
+      });
+    }
+
+    const scriptUrl = 'https://accounts.google.com/gsi/client';
+    let script = document.querySelector(`script[src="${scriptUrl}"]`);
+    if (window.google?.accounts?.id) {
+      initializeGoogleSignIn();
+      return undefined;
+    }
+
+    if (!script) {
+      script = document.createElement('script');
+      script.src = scriptUrl;
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+    script.addEventListener('load', initializeGoogleSignIn);
+    return () => script.removeEventListener('load', initializeGoogleSignIn);
+  }, [navigate]);
 
   function clearErrors() {
     setEmailError('');
@@ -92,6 +170,9 @@ export default function Login() {
     setCurrentPwd('');
     setNewPwd('');
     setConfirmPwd('');
+    setShowCurrentPwd(false);
+    setShowNewPwd(false);
+    setShowConfirmPwd(false);
   }
 
   async function handleSignupSubmit(event) {
@@ -122,6 +203,8 @@ export default function Login() {
       setSignupEmail('');
       setSignupPwd('');
       setSignupConfirm('');
+      setShowSignupPwd(false);
+      setShowSignupConfirm(false);
       navigate('/search', { replace: true });
     } catch (err) {
       setSignupError(err.message || 'Could not create account.');
@@ -130,6 +213,9 @@ export default function Login() {
 
   return (
     <>
+      <div className="login-toolbar">
+        <ThemeToggle />
+      </div>
       <PageHeader title="Sign in" description="User accounts are stored in MongoDB. Password reset is still demo-only." />
       <div className="app-content">
         <div className="page-card login-card">
@@ -191,25 +277,24 @@ export default function Login() {
 
             <div className="field">
               <label htmlFor="password">Password</label>
-              <input
-                className="ui-input"
-                id="password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="8+ chars, 1 number, 1 special"
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <label className="password-visibility">
+              <div className="password-input-wrap">
                 <input
-                  type="checkbox"
-                  checked={showPassword}
-                  onChange={(event) => setShowPassword(event.target.checked)}
+                  className="ui-input"
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="8+ chars, 1 number, 1 special"
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
-                Show password
-              </label>
+                <PasswordToggle
+                  visible={showPassword}
+                  label="password"
+                  onToggle={() => setShowPassword((visible) => !visible)}
+                />
+              </div>
               {passwordError && <small className="ui-error">{passwordError}</small>}
             </div>
 
@@ -217,14 +302,31 @@ export default function Login() {
               Sign in
             </button>
 
+            {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+              <>
+                <div className="login-divider"><span>or continue with</span></div>
+                <div className="google-signin-button" ref={googleButtonRef} />
+                {googleError && <small className="ui-error">{googleError}</small>}
+              </>
+            )}
+
             <div className="login-links">
               <button type="button" className="link-btn" onClick={handleForgotPassword}>
                 Forgot password
               </button>
-              <button type="button" className="link-btn" onClick={() => setShowResetModal(true)}>
+              <button type="button" className="link-btn" onClick={() => {
+                setShowCurrentPwd(false);
+                setShowNewPwd(false);
+                setShowConfirmPwd(false);
+                setShowResetModal(true);
+              }}>
                 Reset password
               </button>
-              <button type="button" className="link-btn" onClick={() => setShowSignupModal(true)}>
+              <button type="button" className="link-btn" onClick={() => {
+                setShowSignupPwd(false);
+                setShowSignupConfirm(false);
+                setShowSignupModal(true);
+              }}>
                 Create account
               </button>
             </div>
@@ -239,38 +341,59 @@ export default function Login() {
             <h2 id="reset-title">Reset password</h2>
             <div className="field">
               <label htmlFor="currentPwd">Current password</label>
-              <input
-                className="ui-input"
-                id="currentPwd"
-                type="password"
-                required
-                value={currentPwd}
-                onChange={(e) => setCurrentPwd(e.target.value)}
-              />
+              <div className="password-input-wrap">
+                <input
+                  className="ui-input"
+                  id="currentPwd"
+                  type={showCurrentPwd ? 'text' : 'password'}
+                  required
+                  value={currentPwd}
+                  onChange={(e) => setCurrentPwd(e.target.value)}
+                />
+                <PasswordToggle
+                  visible={showCurrentPwd}
+                  label="current password"
+                  onToggle={() => setShowCurrentPwd((visible) => !visible)}
+                />
+              </div>
             </div>
             <div className="field">
               <label htmlFor="newPwd">New password</label>
-              <input
-                className="ui-input"
-                id="newPwd"
-                type="password"
-                required
-                minLength={8}
-                value={newPwd}
-                onChange={(e) => setNewPwd(e.target.value)}
-              />
+              <div className="password-input-wrap">
+                <input
+                  className="ui-input"
+                  id="newPwd"
+                  type={showNewPwd ? 'text' : 'password'}
+                  required
+                  minLength={8}
+                  value={newPwd}
+                  onChange={(e) => setNewPwd(e.target.value)}
+                />
+                <PasswordToggle
+                  visible={showNewPwd}
+                  label="new password"
+                  onToggle={() => setShowNewPwd((visible) => !visible)}
+                />
+              </div>
             </div>
             <div className="field">
               <label htmlFor="confirmPwd">Confirm new password</label>
-              <input
-                className="ui-input"
-                id="confirmPwd"
-                type="password"
-                required
-                minLength={8}
-                value={confirmPwd}
-                onChange={(e) => setConfirmPwd(e.target.value)}
-              />
+              <div className="password-input-wrap">
+                <input
+                  className="ui-input"
+                  id="confirmPwd"
+                  type={showConfirmPwd ? 'text' : 'password'}
+                  required
+                  minLength={8}
+                  value={confirmPwd}
+                  onChange={(e) => setConfirmPwd(e.target.value)}
+                />
+                <PasswordToggle
+                  visible={showConfirmPwd}
+                  label="confirm password"
+                  onToggle={() => setShowConfirmPwd((visible) => !visible)}
+                />
+              </div>
             </div>
             <div className="modal-actions">
               <button
@@ -281,6 +404,9 @@ export default function Login() {
                   setCurrentPwd('');
                   setNewPwd('');
                   setConfirmPwd('');
+                  setShowCurrentPwd(false);
+                  setShowNewPwd(false);
+                  setShowConfirmPwd(false);
                   setResetError('');
                 }}
               >
@@ -313,28 +439,42 @@ export default function Login() {
             </div>
             <div className="field">
               <label htmlFor="signupPwd">Password</label>
-              <input
-                className="ui-input"
-                id="signupPwd"
-                type="password"
-                required
-                minLength={8}
-                placeholder="8+ chars, 1 number, 1 special"
-                value={signupPwd}
-                onChange={(e) => setSignupPwd(e.target.value)}
-              />
+              <div className="password-input-wrap">
+                <input
+                  className="ui-input"
+                  id="signupPwd"
+                  type={showSignupPwd ? 'text' : 'password'}
+                  required
+                  minLength={8}
+                  placeholder="8+ chars, 1 number, 1 special"
+                  value={signupPwd}
+                  onChange={(e) => setSignupPwd(e.target.value)}
+                />
+                <PasswordToggle
+                  visible={showSignupPwd}
+                  label="password"
+                  onToggle={() => setShowSignupPwd((visible) => !visible)}
+                />
+              </div>
             </div>
             <div className="field">
               <label htmlFor="signupConfirm">Confirm password</label>
-              <input
-                className="ui-input"
-                id="signupConfirm"
-                type="password"
-                required
-                minLength={8}
-                value={signupConfirm}
-                onChange={(e) => setSignupConfirm(e.target.value)}
-              />
+              <div className="password-input-wrap">
+                <input
+                  className="ui-input"
+                  id="signupConfirm"
+                  type={showSignupConfirm ? 'text' : 'password'}
+                  required
+                  minLength={8}
+                  value={signupConfirm}
+                  onChange={(e) => setSignupConfirm(e.target.value)}
+                />
+                <PasswordToggle
+                  visible={showSignupConfirm}
+                  label="confirm password"
+                  onToggle={() => setShowSignupConfirm((visible) => !visible)}
+                />
+              </div>
             </div>
             <p>New accounts are created with viewer access.</p>
             <div className="modal-actions">
@@ -346,6 +486,8 @@ export default function Login() {
                   setSignupEmail('');
                   setSignupPwd('');
                   setSignupConfirm('');
+                  setShowSignupPwd(false);
+                  setShowSignupConfirm(false);
                   setSignupError('');
                 }}
               >
