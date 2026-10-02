@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import { deleteInventoryItem, fetchFilterOptions, fetchInventoryItem, updateInventoryItem } from '../api/inventory';
 import { defaultMetadata } from '../data/defaultMetadata';
+import { usePinnedProducts } from '../state/PinnedProductsContext';
 import { formatDateToText, formatTextToDate } from '../utils/dateUtils';
 import './EditExisting.css';
 
@@ -22,6 +23,7 @@ const emptyForm = {
 export default function EditExisting() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { updatePinnedProduct } = usePinnedProducts();
   const [form, setForm] = useState(emptyForm);
   const [metadataOptions, setMetadataOptions] = useState({ companies: [], categories: [], measurements: [] });
   const [errors, setErrors] = useState({});
@@ -123,7 +125,7 @@ export default function EditExisting() {
     setSaving(true);
     setSubmitError('');
     try {
-      await updateInventoryItem(id, {
+      const updatedItem = await updateInventoryItem(id, {
         measurement: form.measurement.trim(),
         productName: form.productName.trim(),
         productCode: form.productCode.trim(),
@@ -134,6 +136,7 @@ export default function EditExisting() {
         godown: form.godown.trim(),
         dateOfLoad: form.loadDatePicker || formatTextToDate(form.loadDateText) || '',
       });
+      updatePinnedProduct(updatedItem);
       setMessage(`Saved changes to "${form.productName.trim()}".`);
     } catch (error) {
       setSubmitError(error.message || 'Could not save changes.');

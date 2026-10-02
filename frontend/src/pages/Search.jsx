@@ -31,6 +31,20 @@ function FilterSelect({ id, label, value, onChange, options }) {
   );
 }
 
+function StockHistoryPhoto({ src, alt }) {
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  return (
+    <div className="stock-history-photo">
+      {src && !loadFailed ? (
+        <img src={src} alt={alt} onError={() => setLoadFailed(true)} />
+      ) : (
+        <span>pic not available</span>
+      )}
+    </div>
+  );
+}
+
 export default function Search() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,6 +57,7 @@ export default function Search() {
   const [exportFormat, setExportFormat] = useState('csv');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [historyItem, setHistoryItem] = useState(null);
   const [stockAdjustment, setStockAdjustment] = useState(null);
   const [stockAdjustmentAmount, setStockAdjustmentAmount] = useState('1');
   const [stockAdjustmentError, setStockAdjustmentError] = useState('');
@@ -54,7 +69,7 @@ export default function Search() {
   const [filterOptions, setFilterOptions] = useState(emptyFilterOptions);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { isPinned, togglePinned } = usePinnedProducts();
+  const { isPinned, togglePinned, updatePinnedProduct } = usePinnedProducts();
 
   const currentUser = useMemo(() => {
     try {
@@ -197,7 +212,8 @@ export default function Search() {
     setUpdatingStock((previous) => ({ ...previous, [item.id]: true }));
 
     try {
-      await updateInventoryStock(item.id, direction, amount);
+      const updatedItem = await updateInventoryStock(item.id, direction, amount);
+      updatePinnedProduct({ ...item, quantity: updatedItem.quantity });
       setStockAdjustment(null);
       await loadInventory(filters, false);
     } catch (err) {
@@ -371,7 +387,7 @@ export default function Search() {
                     <th>Qty</th>
                     <th>Stock update</th>
                     <th>Godown</th>
-                    <th>Load date</th>
+                    <th>History</th>
                     <th aria-label="Edit product">Edit</th>
                     <th aria-label="Delete product">Delete</th>
                     <th aria-label="Pin product" />
@@ -414,7 +430,20 @@ export default function Search() {
                         </div>
                       </td>
                       <td>{item.godown}</td>
-                      <td>{item.dateOfLoad}</td>
+                      <td className="search-history-cell">
+                        <button
+                          type="button"
+                          className="search-history-button"
+                          onClick={() => setHistoryItem(item)}
+                          aria-label={`View stock history for ${item.productName}`}
+                          title="View stock history"
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M3.5 12a8.5 8.5 0 1 0 2.49-6.01L3.5 8.5" />
+                            <path d="M3.5 3.75V8.5H8.25M12 7v5l3.25 2" />
+                          </svg>
+                        </button>
+                      </td>
                       <td className="search-edit-cell">
                         <button
                           type="button"
@@ -498,6 +527,80 @@ export default function Search() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {historyItem && (
+        <div
+          className="stock-history-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setHistoryItem(null);
+          }}
+        >
+          <section className="stock-history-card" role="dialog" aria-modal="true" aria-labelledby="stock-history-title">
+            <div className="stock-history-header">
+              <div className="stock-history-product">
+                <StockHistoryPhoto
+                  key={historyItem.id ?? historyItem.productName}
+                  src={historyItem.productImage}
+                  alt={historyItem.productName}
+                />
+                <div>
+                  <h3 id="stock-history-title">Stock history</h3>
+                  <p>{historyItem.productName} · {historyItem.company}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="stock-history-close"
+                onClick={() => setHistoryItem(null)}
+                aria-label="Close stock history"
+                title="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="stock-history-load-date">
+              <span>Date of load</span>
+              <strong>{historyItem.dateOfLoad || 'Not recorded'}</strong>
+            </div>
+            {historyItem.stockHistory?.length ? (
+              <ol className="stock-history-list">
+                {[...historyItem.stockHistory].reverse().map((entry, index) => {
+                  const eventDate = entry.changedAt ? new Date(entry.changedAt) : null;
+                  const eventLabel = entry.type === 'load'
+                    ? 'Initial stock loaded'
+                    : entry.type === 'edit'
+                      ? 'Stock quantity edited'
+                      : entry.change > 0
+                        ? 'Stock increased'
+                        : 'Stock decreased';
+                  return (
+                    <li className="stock-history-event" key={`${entry.changedAt}-${index}`}>
+                      <div>
+                        <strong>{eventLabel}</strong>
+                        <span>{entry.change > 0 ? '+' : ''}{entry.change} units</span>
+                        {entry.quantityAfter !== undefined && <small>Stock after update: {entry.quantityAfter}</small>}
+                      </div>
+                      <time>
+                        {eventDate && !Number.isNaN(eventDate.getTime())
+                          ? eventDate.toLocaleString()
+                          : 'Date/time unavailable'}
+                      </time>
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : (
+              <p className="stock-history-empty">No stock updates have been recorded for this product.</p>
+            )}
+            <div className="stock-history-footer">
+              <button type="button" className="btn btn-secondary" onClick={() => setHistoryItem(null)}>
+                Close
+              </button>
+            </div>
+          </section>
         </div>
       )}
 

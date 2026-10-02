@@ -36,6 +36,15 @@ export function PinnedProductsProvider({ children }) {
             : [...currentProducts, product];
         });
       },
+      updatePinnedProduct: (product) => {
+        setPinnedProducts((currentProducts) =>
+          currentProducts.map((pinnedProduct) =>
+            getProductKey(pinnedProduct) === getProductKey(product)
+              ? { ...pinnedProduct, ...product }
+              : pinnedProduct,
+          ),
+        );
+      },
     }),
     [pinnedProducts],
   );

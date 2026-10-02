@@ -70,6 +70,8 @@ router.get('/', async (req, res, next) => {
       quantity: item.quantity,
       godown: item.godown,
       dateOfLoad: item.dateOfLoad,
+      createdAt: item.createdAt,
+      stockHistory: item.stockHistory || [],
     }));
 
     res.json({ items: results, total: results.length });
@@ -111,6 +113,7 @@ router.post('/', requireRole('admin'), async (req, res, next) => {
       quantity: qty,
       godown: typeof godown === 'string' ? godown.trim() : '',
       dateOfLoad: dateOfLoad || '',
+      stockHistory: [{ type: 'load', change: qty, quantityAfter: qty, changedAt: new Date() }],
     });
 
     res.status(201).json(item);
@@ -132,19 +135,30 @@ router.put('/:id', requireRole('admin'), async (req, res, next) => {
       return res.status(400).json({ message: 'Quantity must be a non-negative integer.' });
     }
 
+    const existingItem = await InventoryItem.findById(req.params.id).select('quantity');
+    if (!existingItem) return res.status(404).json({ message: 'Inventory item not found.' });
+
+    const change = qty - existingItem.quantity;
+    const update = {
+      measurement: measurement?.trim() || '',
+      productName: productName.trim(),
+      productCode: typeof productCode === 'string' ? productCode.trim() : String(productCode ?? '').trim(),
+      productImage: typeof productImage === 'string' ? productImage.trim() : '',
+      company: company.trim(),
+      category: category.trim(),
+      quantity: qty,
+      godown: typeof godown === 'string' ? godown.trim() : '',
+      dateOfLoad: dateOfLoad || '',
+    };
+    if (change !== 0) {
+      update.$push = {
+        stockHistory: { type: 'edit', change, quantityAfter: qty, changedAt: new Date() },
+      };
+    }
+
     const item = await InventoryItem.findByIdAndUpdate(
       req.params.id,
-      {
-        measurement: measurement?.trim() || '',
-        productName: productName.trim(),
-        productCode: typeof productCode === 'string' ? productCode.trim() : String(productCode ?? '').trim(),
-        productImage: typeof productImage === 'string' ? productImage.trim() : '',
-        company: company.trim(),
-        category: category.trim(),
-        quantity: qty,
-        godown: typeof godown === 'string' ? godown.trim() : '',
-        dateOfLoad: dateOfLoad || '',
-      },
+      update,
       { new: true, runValidators: true },
     );
 
@@ -170,7 +184,16 @@ router.patch('/:id/stock', requireRole('admin'), async (req, res, next) => {
       isDecrement
         ? { _id: req.params.id, quantity: { $gte: amount } }
         : { _id: req.params.id },
-      { $inc: { quantity: isDecrement ? -amount : amount } },
+      {
+        $inc: { quantity: isDecrement ? -amount : amount },
+        $push: {
+          stockHistory: {
+            type: 'adjustment',
+            change: isDecrement ? -amount : amount,
+            changedAt: new Date(),
+          },
+        },
+      },
       { new: true, runValidators: true },
     );
 

@@ -1,5 +1,15 @@
 import mongoose from 'mongoose';
 
+const stockHistoryEntrySchema = new mongoose.Schema(
+  {
+    type: { type: String, enum: ['load', 'adjustment', 'edit'], required: true },
+    change: { type: Number, required: true },
+    quantityAfter: { type: Number },
+    changedAt: { type: Date, required: true, default: Date.now },
+  },
+  { _id: false },
+);
+
 const inventoryItemSchema = new mongoose.Schema(
   {
     measurement: { type: String, default: '' },
@@ -11,6 +21,7 @@ const inventoryItemSchema = new mongoose.Schema(
     quantity: { type: Number, required: true, min: 0 },
     godown: { type: String, default: '' },
     dateOfLoad: { type: String, default: '' },
+    stockHistory: { type: [stockHistoryEntrySchema], default: [] },
   },
   {
     timestamps: true,
