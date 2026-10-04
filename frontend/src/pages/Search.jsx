@@ -164,7 +164,10 @@ export default function Search() {
 
   async function handleExport() {
     setError('');
-    const fileName = window.prompt('Enter a name for the export:', 'inventory-export');
+    const now = new Date();
+    const pad = (value) => String(value).padStart(2, '0');
+    const defaultFileName = `inventory-export _${pad(now.getDate())}_${pad(now.getMonth() + 1)}_${now.getFullYear()}_${pad(now.getHours())}_${pad(now.getMinutes())}_${pad(now.getSeconds())}`;
+    const fileName = window.prompt('Enter a name for the export:', defaultFileName);
     if (fileName === null) return;
     if (!fileName.trim()) {
       setError('Enter a name for the export.');

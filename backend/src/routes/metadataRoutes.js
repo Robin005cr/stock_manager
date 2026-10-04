@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { InventoryItem } from '../models/InventoryItem.js';
 import { MetadataOption } from '../models/MetadataOption.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { isDuplicateMetadataValue, metadataValueSignature, normalizeMetadataValue } from '../utils/metadataValidation.js';
@@ -110,11 +111,18 @@ router.delete('/:kind/:id', requireRole('admin'), async (req, res, next) => {
       return res.status(400).json({ message: 'Unsupported metadata type.' });
     }
 
-    const deleted = await MetadataOption.findOneAndDelete({ _id: req.params.id, kind });
-    if (!deleted) {
+    const option = await MetadataOption.findOne({ _id: req.params.id, kind }).lean();
+    if (!option) {
       return res.status(404).json({ message: 'Metadata item not found.' });
     }
 
+    const productExists = await InventoryItem.exists({ [kind]: option.value });
+    if (productExists) {
+      const label = { category: 'category', company: 'Company', measurement: 'Measurement' }[kind];
+      return res.status(409).json({ message: `This ${label} exists in the product list` });
+    }
+
+    await MetadataOption.deleteOne({ _id: option._id, kind });
     return res.json({ success: true });
   } catch (error) {
     return next(error);
