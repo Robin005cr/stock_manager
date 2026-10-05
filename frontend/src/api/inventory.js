@@ -44,6 +44,13 @@ export function updateInventoryItem(id, payload) {
   });
 }
 
+export function updateInventoryFromSpreadsheet(rows) {
+  return apiRequest('/api/inventory/bulk-update', {
+    method: 'POST',
+    body: JSON.stringify({ rows }),
+  });
+}
+
 export function updateInventoryStock(id, direction, amount) {
   return apiRequest(`/api/inventory/${id}/stock`, {
     method: 'PATCH',

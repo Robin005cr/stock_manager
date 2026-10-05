@@ -2,6 +2,50 @@
   max-width: 720px;
 }
 
+.inventory-import-card {
+  max-width: 900px;
+  margin-bottom: 20px;
+}
+
+.inventory-import-card h2 {
+  margin: 0 0 8px;
+}
+
+.inventory-import-card > p {
+  margin: 0 0 16px;
+  color: var(--color-text-muted);
+}
+
+.inventory-import-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+}
+
+.inventory-import-file {
+  flex: 1 1 280px;
+  margin: 0;
+}
+
+.inventory-import-file span {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.inventory-import-skipped {
+  margin-top: 8px;
+}
+
+.inventory-import-skipped ul {
+  margin: 8px 0 0;
+  padding-left: 22px;
+}
+
+.inventory-import-skipped li + li {
+  margin-top: 4px;
+}
+
 .entry-error-banner {
   background: var(--color-error-bg);
   color: var(--color-error);

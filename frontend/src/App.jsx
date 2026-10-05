@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Metadata from './pages/Metadata';
 import PinnedProducts from './pages/PinnedProducts';
 import Search from './pages/Search';
+import TransportMovement from './pages/TransportMovement';
 import { getSessionUser, hasSession } from './api/auth';
 import { PinnedProductsProvider } from './state/PinnedProductsContext';
 import './styles/global.css';
@@ -30,6 +31,7 @@ export default function App() {
               <Route path="/pinned-products" element={<PinnedProducts />} />
               <Route element={<RequireAdmin />}>
                 <Route path="/" element={<Entry />} />
+                <Route path="/transport-movement" element={<TransportMovement />} />
                 <Route path="/edit-existing" element={<EditExisting />} />
                 <Route path="/edit-existing/:id" element={<EditExisting />} />
                 <Route path="/meta-details" element={<Metadata />} />
