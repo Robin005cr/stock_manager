@@ -513,6 +513,7 @@
     flex-wrap: nowrap;
     padding-bottom: 4px;
     scrollbar-width: thin;
+    overscroll-behavior-x: contain;
   }
 
   .search-export-row {
@@ -520,7 +521,7 @@
   }
 
   .advanced-filters {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .search-toolbar {
@@ -532,7 +533,7 @@
   }
 
   .filter-toggle > span:not(.filter-icon):not(.filter-count) {
-    display: none;
+    display: inline;
   }
 
   .filter-drawer-header {
@@ -556,5 +557,82 @@
     flex-basis: 72px;
     width: 72px;
     height: 72px;
+  }
+
+  .stat-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .stat-card {
+    padding: 12px 10px;
+  }
+
+  .stat-card .stat-label {
+    font-size: 10px;
+  }
+
+  .stat-card .stat-value {
+    font-size: 22px;
+  }
+
+  .data-table {
+    min-width: 960px;
+  }
+
+  .delete-confirm-overlay,
+  .stock-adjust-overlay,
+  .stock-history-overlay {
+    padding: 12px;
+  }
+
+  .delete-confirm-card,
+  .stock-adjust-card,
+  .stock-history-card {
+    padding: 20px 16px;
+  }
+
+  .delete-confirm-actions,
+  .stock-adjust-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .delete-confirm-actions .btn,
+  .stock-adjust-actions .btn,
+  .stock-history-footer .btn {
+    width: 100%;
+  }
+
+  .stock-history-event {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 420px) {
+  .advanced-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .search-toolbar {
+    gap: 8px;
+  }
+
+  .search-input {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .filter-toggle {
+    gap: 6px;
+    padding: 0 10px;
+  }
+
+  .filter-count {
+    min-width: 18px;
+  }
+
+  .stat-card .stat-label {
+    letter-spacing: 0;
   }
 }

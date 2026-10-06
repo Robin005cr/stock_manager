@@ -69,6 +69,7 @@
 
 .transport-table-wrap {
   overflow-x: auto;
+  overscroll-behavior-x: contain;
 }
 
 .transport-table {
@@ -115,6 +116,26 @@
 }
 
 @media (max-width: 540px) {
+  .transport-tabs .btn {
+    flex: 1 1 140px;
+  }
+
+  .transport-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .transport-filter-heading {
+    align-items: stretch;
+  }
+
+  .transport-filter-heading > .btn {
+    width: 100%;
+  }
+
+  .transport-table {
+    min-width: 760px;
+  }
+
   .transport-table th,
   .transport-table td {
     padding: 11px 12px;
