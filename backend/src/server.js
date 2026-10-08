@@ -7,6 +7,7 @@ import inventoryRoutes from './routes/inventoryRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import metadataRoutes from './routes/metadataRoutes.js';
 import transportMovementRoutes from './routes/transportMovementRoutes.js';
+import stockBookingRoutes from './routes/stockBookingRoutes.js';
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/metadata', metadataRoutes);
 app.use('/api/transport-movements', transportMovementRoutes);
+app.use('/api/stock-bookings', stockBookingRoutes);
 
 app.use((error, _req, res, _next) => {
   console.error(error);

@@ -1,0 +1,122 @@
+.stock-booking-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.stock-booking-form-card,
+.stock-booking-results-card {
+  max-width: 1200px;
+}
+
+.stock-booking-form-card h2,
+.stock-booking-heading h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.stock-booking-form {
+  margin-top: 20px;
+}
+
+.stock-booking-form-actions {
+  grid-column: 1 / -1;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.stock-booking-empty {
+  margin: 0;
+  padding: 24px 16px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.stock-booking-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+}
+
+.stock-booking-heading p {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.stock-booking-heading > span {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.stock-booking-table-wrap {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.stock-booking-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.stock-booking-table th,
+.stock-booking-table td {
+  padding: 13px 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.stock-booking-table th {
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.stock-booking-table td {
+  font-size: 13px;
+}
+
+.stock-booking-status {
+  text-transform: capitalize;
+  font-weight: 600;
+}
+
+.stock-booking-status.held {
+  color: var(--color-primary);
+}
+
+.stock-booking-status.released {
+  color: var(--color-success);
+}
+
+.stock-booking-status.expired {
+  color: var(--color-text-muted);
+}
+
+.stock-booking-release {
+  padding: 7px 12px;
+}
+
+@media (max-width: 540px) {
+  .stock-booking-form-actions .btn {
+    width: 100%;
+  }
+
+  .stock-booking-heading {
+    align-items: flex-start;
+  }
+
+  .stock-booking-table {
+    min-width: 920px;
+  }
+
+  .stock-booking-table th,
+  .stock-booking-table td {
+    padding: 11px 12px;
+  }
+}

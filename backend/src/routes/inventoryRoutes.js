@@ -1,5 +1,7 @@
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import { InventoryItem } from '../models/InventoryItem.js';
+import { getActiveReservedQuantities } from '../utils/stockBookingReservations.js';
 import { MetadataOption } from '../models/MetadataOption.js';
 import { buildInventoryQuery } from '../utils/inventoryQuery.js';
 import { metadataValueSignature, normalizeMetadataValue } from '../utils/metadataValidation.js';
@@ -242,6 +244,7 @@ router.post('/bulk-update', requireRole('admin'), async (req, res, next) => {
       InventoryItem.distinct('company'),
       InventoryItem.distinct('category'),
     ]);
+    const reservedByProduct = await getActiveReservedQuantities(products.map(({ _id }) => _id));
 
     const allowedMetadata = {
       measurement: new Map((defaultMetadata.measurements || []).map((value) => [metadataValueSignature(value), value])),
@@ -299,6 +302,13 @@ router.post('/bulk-update', requireRole('admin'), async (req, res, next) => {
       if (invalidMetadata) continue;
 
       const currentProduct = matches[0];
+      if (row.quantity < (reservedByProduct.get(currentProduct._id.toString()) || 0)) {
+        skipped.push({
+          rowNumber: row.rowNumber,
+          message: 'Quantity cannot be lower than the quantity currently held for bookings.',
+        });
+        continue;
+      }
       const change = row.quantity - currentProduct.quantity;
       const update = {
         measurement: canonicalMetadata.measurement,
@@ -348,6 +358,10 @@ router.put('/:id', requireRole('admin'), async (req, res, next) => {
 
     const existingItem = await InventoryItem.findById(req.params.id).select('quantity');
     if (!existingItem) return res.status(404).json({ message: 'Inventory item not found.' });
+    const reservedByProduct = await getActiveReservedQuantities([existingItem._id]);
+    if (qty < (reservedByProduct.get(existingItem._id.toString()) || 0)) {
+      return res.status(400).json({ message: 'Quantity cannot be lower than the quantity currently held for bookings.' });
+    }
 
     const change = qty - existingItem.quantity;
     const update = {
@@ -391,6 +405,13 @@ router.patch('/:id/stock', requireRole('admin'), async (req, res, next) => {
     }
 
     const isDecrement = direction === 'decrement';
+    const existingItem = await InventoryItem.findById(req.params.id).select('quantity');
+    if (!existingItem) return res.status(404).json({ message: 'Inventory item not found.' });
+    const reservedByProduct = await getActiveReservedQuantities([existingItem._id]);
+    const reservedQuantity = reservedByProduct.get(existingItem._id.toString()) || 0;
+    if (isDecrement && existingItem.quantity - amount < reservedQuantity) {
+      return res.status(400).json({ message: 'Stock cannot be reduced below the quantity currently held for bookings.' });
+    }
     const item = await InventoryItem.findOneAndUpdate(
       isDecrement
         ? { _id: req.params.id, quantity: { $gte: amount } }
@@ -422,6 +443,13 @@ router.patch('/:id/stock', requireRole('admin'), async (req, res, next) => {
 
 router.delete('/:id', requireRole('admin'), async (req, res, next) => {
   try {
+    const productIds = mongoose.isValidObjectId(req.params.id)
+      ? [new mongoose.Types.ObjectId(req.params.id)]
+      : [];
+    const reservedByProduct = await getActiveReservedQuantities(productIds);
+    if ((reservedByProduct.get(req.params.id) || 0) > 0) {
+      return res.status(409).json({ message: 'This product cannot be deleted while stock is held for bookings.' });
+    }
     const item = await InventoryItem.findByIdAndDelete(req.params.id);
     if (!item) return res.status(404).json({ message: 'Inventory item not found.' });
     res.json({ message: 'Inventory item deleted.' });

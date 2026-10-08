@@ -5,6 +5,7 @@ import ThemeToggle from './ThemeToggle';
 const adminNavItems = [
   { to: '/', label: 'Update record', icon: '✎', end: true },
   { to: '/transport-movement', label: 'Transport movement', icon: '↗' },
+  { to: '/stock-booking', label: 'Stock booking', icon: '▤' },
   { to: '/meta-details', label: 'Add meta details', icon: '▣' },
 ];
 
