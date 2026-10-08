@@ -211,7 +211,6 @@
 }
 
 .search-edit-cell,
-.search-delete-cell,
 .search-stock-cell,
 .search-history-cell {
   white-space: nowrap;
@@ -301,21 +300,18 @@
   outline-offset: 2px;
 }
 
-.search-edit-button,
-.search-delete-button {
+.search-edit-button {
   display: inline-flex;
   padding: 7px 10px;
   font-size: 12px;
   text-decoration: none;
 }
 
-.search-edit-button:disabled,
-.search-delete-button:disabled {
+.search-edit-button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
-.delete-confirm-overlay,
 .stock-adjust-overlay,
 .stock-history-overlay {
   position: fixed;
@@ -327,7 +323,6 @@
   z-index: 2000;
 }
 
-.delete-confirm-card,
 .stock-adjust-card,
 .stock-history-card {
   width: min(420px, calc(100vw - 32px));
@@ -338,7 +333,6 @@
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
 }
 
-.delete-confirm-card h3,
 .stock-adjust-card h3,
 .stock-history-card h3 {
   margin: 0 0 12px;
@@ -346,7 +340,6 @@
   font-size: 22px;
 }
 
-.delete-confirm-card p,
 .stock-adjust-card > .stock-adjust-summary {
   margin: 0 0 20px;
   color: var(--color-text-muted);
@@ -490,7 +483,6 @@
   margin-top: 20px;
 }
 
-.delete-confirm-actions,
 .stock-adjust-actions {
   display: flex;
   justify-content: flex-end;
@@ -580,25 +572,21 @@
     min-width: 960px;
   }
 
-  .delete-confirm-overlay,
   .stock-adjust-overlay,
   .stock-history-overlay {
     padding: 12px;
   }
 
-  .delete-confirm-card,
   .stock-adjust-card,
   .stock-history-card {
     padding: 20px 16px;
   }
 
-  .delete-confirm-actions,
   .stock-adjust-actions {
     flex-direction: column-reverse;
     align-items: stretch;
   }
 
-  .delete-confirm-actions .btn,
   .stock-adjust-actions .btn,
   .stock-history-footer .btn {
     width: 100%;

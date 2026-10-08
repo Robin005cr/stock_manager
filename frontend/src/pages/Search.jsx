@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
-import { deleteInventoryItem, fetchFilterOptions, fetchInventory, updateInventoryStock } from '../api/inventory';
+import { fetchFilterOptions, fetchInventory, updateInventoryStock } from '../api/inventory';
 import { defaultMetadata } from '../data/defaultMetadata';
 import { usePinnedProducts } from '../state/PinnedProductsContext';
 import { exportResults } from '../utils/exportUtils';
@@ -56,7 +56,6 @@ export default function Search() {
   const [dateValue, setDateValue] = useState('');
   const [exportFormat, setExportFormat] = useState('csv');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
   const [historyItem, setHistoryItem] = useState(null);
   const [stockAdjustment, setStockAdjustment] = useState(null);
   const [stockAdjustmentAmount, setStockAdjustmentAmount] = useState('1');
@@ -178,19 +177,6 @@ export default function Search() {
       await exportResults(results, exportFormat, fileName);
     } catch (err) {
       setError(err.message || 'Could not export inventory results.');
-    }
-  }
-
-  async function handleDeleteConfirmed() {
-    if (!itemToDelete) return;
-
-    try {
-      await deleteInventoryItem(itemToDelete.id);
-      setResults((previous) => previous.filter((item) => item.id !== itemToDelete.id));
-      setItemToDelete(null);
-    } catch (err) {
-      setError(err.message || 'Could not delete the product.');
-      setItemToDelete(null);
     }
   }
 
@@ -392,7 +378,6 @@ export default function Search() {
                     <th>Godown</th>
                     <th>History</th>
                     <th aria-label="Edit product">Edit</th>
-                    <th aria-label="Delete product">Delete</th>
                     <th aria-label="Pin product" />
                   </tr>
                 </thead>
@@ -455,16 +440,6 @@ export default function Search() {
                           onClick={() => navigate(`/edit-existing/${item.id}`, { viewTransition: true })}
                         >
                           Edit
-                        </button>
-                      </td>
-                      <td className="search-delete-cell">
-                        <button
-                          type="button"
-                          className="btn btn-danger search-delete-button"
-                          disabled={!isAdmin}
-                          onClick={() => setItemToDelete(item)}
-                        >
-                          Delete
                         </button>
                       </td>
                       <td className="pin-cell">
@@ -607,22 +582,6 @@ export default function Search() {
         </div>
       )}
 
-      {itemToDelete && (
-        <div className="delete-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title">
-          <div className="delete-confirm-card">
-            <h3 id="delete-confirm-title">Delete product</h3>
-            <p>Are you really want to delete this product from the list?</p>
-            <div className="delete-confirm-actions">
-              <button type="button" className="btn btn-secondary" onClick={() => setItemToDelete(null)}>
-                Cancel
-              </button>
-              <button type="button" className="btn btn-danger" onClick={handleDeleteConfirmed}>
-                Yes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
