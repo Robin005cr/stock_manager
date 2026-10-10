@@ -24,6 +24,7 @@ function getBookingStatus(booking) {
 
 export default function StockBooking() {
   const [form, setForm] = useState(initialForm);
+  const [bookingItems, setBookingItems] = useState([]);
   const [products, setProducts] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,11 +65,22 @@ export default function StockBooking() {
     const totals = new Map();
     bookings.forEach((booking) => {
       if (getBookingStatus(booking) === 'held') {
-        totals.set(booking.product.toString(), (totals.get(booking.product.toString()) || 0) + booking.quantity);
+        totals.set(
+          booking.product.toString(),
+          (totals.get(booking.product.toString()) || 0) + (booking.reservedQuantity ?? booking.quantity),
+        );
       }
     });
     return totals;
   }, [bookings]);
+
+  const bookingQuantityByProduct = useMemo(() => {
+    const totals = new Map();
+    bookingItems.forEach((item) => {
+      totals.set(item.productId, (totals.get(item.productId) || 0) + item.reservedQuantity);
+    });
+    return totals;
+  }, [bookingItems]);
 
   function updateForm(name, value) {
     setForm((previous) => ({ ...previous, [name]: value }));
@@ -76,29 +88,85 @@ export default function StockBooking() {
     setNotice('');
   }
 
-  function availableQuantity(product) {
-    return Math.max(0, product.quantity - (reservedByProduct.get(product.id) || 0));
+  function availableQuantity(product, includeBookingItems = true) {
+    const reserved = reservedByProduct.get(product.id) || 0;
+    const inCurrentBooking = includeBookingItems ? bookingQuantityByProduct.get(product.id) || 0 : 0;
+    return Math.max(0, product.quantity - reserved - inCurrentBooking);
+  }
+
+  function handleAddItem() {
+    setError('');
+    setNotice('');
+    const product = products.find((item) => item.id === form.productId);
+    const quantity = Number(form.quantity);
+    if (!product) {
+      setError('Select a product to add.');
+      return;
+    }
+    if (!Number.isSafeInteger(quantity) || quantity < 1) {
+      setError('Quantity must be a positive whole number.');
+      return;
+    }
+    const available = availableQuantity(product);
+    const existingItem = bookingItems.find((item) => item.productId === product.id);
+    if (existingItem && !Number.isSafeInteger(existingItem.quantity + quantity)) {
+      setError('Combined product quantity is outside the supported range.');
+      return;
+    }
+
+    setBookingItems((previous) => {
+      if (existingItem) {
+        const reservedQuantity = Math.min(quantity, available);
+        return previous.map((item) => (
+          item.productId === product.id
+            ? {
+              ...item,
+              quantity: item.quantity + quantity,
+              reservedQuantity: item.reservedQuantity + reservedQuantity,
+            }
+            : item
+        ));
+      }
+      return [...previous, {
+        productId: product.id,
+        productName: product.productName,
+        quantity,
+        reservedQuantity: Math.min(quantity, available),
+      }];
+    });
+    setForm((previous) => ({ ...previous, productId: '', quantity: '' }));
+  }
+
+  function handleRemoveItem(productId) {
+    setBookingItems((previous) => previous.filter((item) => item.productId !== productId));
+    setError('');
+    setNotice('');
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
     setError('');
     setNotice('');
-    const quantity = Number(form.quantity);
     const daysToHold = Number(form.daysToHold);
-    if (!Number.isSafeInteger(quantity) || quantity < 1) {
-      setError('Quantity must be a positive whole number.');
+    if (!Number.isSafeInteger(daysToHold) || daysToHold < 1 || daysToHold > 60) {
+      setError('Days to hold must be a whole number from 1 to 60.');
       return;
     }
-    if (!Number.isSafeInteger(daysToHold) || daysToHold < 1) {
-      setError('Days to hold must be a positive whole number.');
+    if (bookingItems.length === 0) {
+      setError('Add at least one product to the booking.');
       return;
     }
 
     setSaving(true);
     try {
-      await createStockBooking({ ...form, quantity, daysToHold });
+      await createStockBooking({
+        customerName: form.customerName,
+        customerPhone: form.customerPhone,
+        items: bookingItems.map(({ productId, quantity }) => ({ productId, quantity })),
+        daysToHold,
+      });
       setForm(initialForm);
+      setBookingItems([]);
       setNotice('Stock booking created successfully.');
       try {
         await loadData();
@@ -118,7 +186,7 @@ export default function StockBooking() {
     setReleasingId(booking.id);
     try {
       await releaseStockBooking(booking.id);
-      setNotice(`${booking.quantity} units released from inventory.`);
+      setNotice(`${booking.reservedQuantity ?? booking.quantity} units released from inventory.`);
       try {
         await loadData();
       } catch (refreshError) {
@@ -168,24 +236,26 @@ export default function StockBooking() {
               />
             </div>
             <div className="field">
-              <label htmlFor="booking-product">Product name <span aria-hidden="true">*</span></label>
+              <label htmlFor="booking-product">Product name</label>
               <select
                 className="ui-select"
                 id="booking-product"
                 value={form.productId}
                 onChange={(event) => updateForm('productId', event.target.value)}
-                required
               >
                 <option value="">Select a product</option>
                 {products.map((product) => (
-                  <option key={product.id} value={product.id} disabled={availableQuantity(product) < 1}>
+                  <option
+                    key={product.id}
+                    value={product.id}
+                  >
                     {product.productName} ({availableQuantity(product)} available)
                   </option>
                 ))}
               </select>
             </div>
             <div className="field">
-              <label htmlFor="booking-quantity">Quantity <span aria-hidden="true">*</span></label>
+              <label htmlFor="booking-quantity">Quantity</label>
               <input
                 className="ui-input"
                 id="booking-quantity"
@@ -194,25 +264,74 @@ export default function StockBooking() {
                 step="1"
                 value={form.quantity}
                 onChange={(event) => updateForm('quantity', event.target.value)}
-                required
               />
             </div>
+            <div className="stock-booking-add-item">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleAddItem}
+                disabled={saving || loading || products.length === 0}
+              >
+                Add item
+              </button>
+            </div>
             <div className="field">
-              <label htmlFor="booking-daysToHold">Days to be held <span aria-hidden="true">*</span></label>
+              <label htmlFor="booking-daysToHold">Days to be held (maximum 60) <span aria-hidden="true">*</span></label>
               <input
                 className="ui-input"
                 id="booking-daysToHold"
                 type="number"
                 min="1"
+                max="60"
                 step="1"
                 value={form.daysToHold}
                 onChange={(event) => updateForm('daysToHold', event.target.value)}
                 required
               />
             </div>
+            <div className="stock-booking-cart">
+              <h3>Items in this booking</h3>
+              {bookingItems.length === 0 ? (
+                <p className="stock-booking-cart-empty">Add one or more products above.</p>
+              ) : (
+                <ul>
+                  {bookingItems.map((item) => (
+                    <li key={item.productId}>
+                      <span>
+                        {item.productName} <strong>× {item.quantity}</strong>
+                        <span className="stock-booking-cart-details">
+                          Reserved now: {item.reservedQuantity} · To be booked (deficient quantity):{' '}
+                          <strong className={item.quantity > item.reservedQuantity ? 'stock-booking-deficit' : ''}>
+                            {item.quantity - item.reservedQuantity}
+                          </strong>
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        className="stock-booking-remove-item"
+                        onClick={() => handleRemoveItem(item.productId)}
+                        aria-label={`Remove ${item.productName} from booking`}
+                        disabled={saving}
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <div className="stock-booking-form-actions">
-              <button type="submit" className="btn btn-primary" disabled={saving || loading || products.length === 0}>
-                {saving ? 'Booking…' : 'Book stock'}
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={saving || loading || products.length === 0 || bookingItems.length === 0}
+              >
+                {saving
+                  ? 'Booking…'
+                  : bookingItems.length
+                    ? `Book ${bookingItems.length} item${bookingItems.length === 1 ? '' : 's'}`
+                    : 'Book stock'}
               </button>
             </div>
           </form>
@@ -237,6 +356,8 @@ export default function StockBooking() {
                   <th>Phone number</th>
                   <th>Product</th>
                   <th>Quantity</th>
+                  <th>Reserved</th>
+                  <th title="Deficient quantity not currently available in stock">To be booked</th>
                   <th>Days held</th>
                   <th>Expires</th>
                   <th>Status</th>
@@ -245,9 +366,9 @@ export default function StockBooking() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="8" className="stock-booking-empty">Loading bookings…</td></tr>
+                  <tr><td colSpan="10" className="stock-booking-empty">Loading bookings…</td></tr>
                 ) : bookings.length === 0 ? (
-                  <tr><td colSpan="8" className="stock-booking-empty">No stock bookings yet.</td></tr>
+                  <tr><td colSpan="10" className="stock-booking-empty">No stock bookings yet.</td></tr>
                 ) : bookings.map((booking) => {
                   const status = getBookingStatus(booking);
                   return (
@@ -256,11 +377,18 @@ export default function StockBooking() {
                       <td>{booking.customerPhone}</td>
                       <td>{booking.productName}</td>
                       <td>{booking.quantity}</td>
+                      <td>{booking.reservedQuantity ?? booking.quantity}</td>
+                      <td
+                        className={(booking.deficientQuantity ?? 0) > 0 ? 'stock-booking-deficit' : ''}
+                        title="Deficient quantity not currently available in stock"
+                      >
+                        {booking.deficientQuantity ?? 0}
+                      </td>
                       <td>{booking.daysToHold}</td>
                       <td>{displayDate(booking.expiresAt)}</td>
                       <td><span className={`stock-booking-status ${status}`}>{status}</span></td>
                       <td>
-                        {status === 'held' ? (
+                        {status === 'held' && (booking.reservedQuantity ?? booking.quantity) > 0 ? (
                           <button
                             type="button"
                             className="btn btn-primary stock-booking-release"

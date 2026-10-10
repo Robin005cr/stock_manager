@@ -79,7 +79,7 @@ The backend creates these demo accounts on startup when the email addresses are 
 
 Admins can add metadata, update records, and edit or delete inventory. Viewers can search inventory and manage pinned products, but cannot modify inventory or metadata. New accounts created from the sign-in page are viewers.
 
-Admins can open **Stock booking** to reserve product quantities for customers for a chosen number of days. Active bookings reduce the quantity available for further bookings. Use **Release** when the customer purchases the reserved stock; this deducts the quantity from inventory. Unpurchased bookings stop reserving stock when their hold period expires.
+Admins can open **Stock booking** to reserve quantities of multiple products for one customer for up to 60 days. If a requested quantity exceeds available stock, the booking records the full request, reserves the stock currently available, and shows the shortfall as the deficient quantity to be booked. Each product's reserved stock can be released separately when the customer purchases it; releasing deducts the reserved quantity from inventory. Unpurchased reservations stop reserving stock when their hold period expires.
 
 Google sign-in requires an OAuth 2.0 Web client ID from Google Cloud. Add your frontend origin (for local development, `http://localhost:5173`) to its authorized JavaScript origins. Set the client ID as `VITE_GOOGLE_CLIENT_ID` in `frontend/.env` and as `GOOGLE_CLIENT_ID` in `backend/.env`, then restart Vite and the backend. Google-created accounts are viewers; an existing account with a matching verified Google email is linked and keeps its existing role.
 

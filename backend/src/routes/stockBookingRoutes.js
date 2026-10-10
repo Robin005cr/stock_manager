@@ -15,6 +15,8 @@ router.get('/', async (_req, res, next) => {
       items: bookings.map(({ _id, __v, ...booking }) => ({
         ...booking,
         id: _id.toString(),
+        reservedQuantity: booking.reservedQuantity ?? booking.quantity,
+        deficientQuantity: booking.quantity - (booking.reservedQuantity ?? booking.quantity),
         status: booking.status === 'held' && booking.expiresAt <= now ? 'expired' : booking.status,
       })),
       total: bookings.length,
@@ -26,7 +28,7 @@ router.get('/', async (_req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   try {
-    const { customerName, customerPhone, productId, quantity, daysToHold } = req.body || {};
+    const { customerName, customerPhone, daysToHold } = req.body || {};
     if (
       typeof customerName !== 'string' ||
       !customerName.trim() ||
@@ -38,30 +40,57 @@ router.post('/', async (req, res, next) => {
     if (customerName.trim().length > 120 || customerPhone.trim().length > 40) {
       return res.status(400).json({ message: 'Customer name or phone number is too long.' });
     }
-    if (!mongoose.isValidObjectId(productId)) {
-      return res.status(400).json({ message: 'Select a valid product.' });
+    if (req.body?.items !== undefined && !Array.isArray(req.body.items)) {
+      return res.status(400).json({ message: 'Booking items must be provided as a list.' });
     }
-    if (!Number.isSafeInteger(quantity) || quantity < 1) {
-      return res.status(400).json({ message: 'Quantity must be a positive whole number.' });
+    const requestedItems = Array.isArray(req.body?.items)
+      ? req.body.items
+      : [{ productId: req.body?.productId, quantity: req.body?.quantity }];
+    if (requestedItems.length < 1) {
+      return res.status(400).json({ message: 'Add at least one product to a booking.' });
     }
-    if (!Number.isSafeInteger(daysToHold) || daysToHold < 1) {
-      return res.status(400).json({ message: 'Days to hold must be a positive whole number.' });
+    if (!Number.isSafeInteger(daysToHold) || daysToHold < 1 || daysToHold > 60) {
+      return res.status(400).json({ message: 'Days to hold must be a whole number from 1 to 60.' });
     }
 
-    const item = await InventoryItem.findById(productId).select('productName quantity');
-    if (!item) return res.status(404).json({ message: 'Product not found.' });
+    const quantitiesByProduct = new Map();
+    for (const requestedItem of requestedItems) {
+      const { productId, quantity } = requestedItem || {};
+      if (!mongoose.isValidObjectId(productId)) {
+        return res.status(400).json({ message: 'Select a valid product for every booking item.' });
+      }
+      if (!Number.isSafeInteger(quantity) || quantity < 1) {
+        return res.status(400).json({ message: 'Every item quantity must be a positive whole number.' });
+      }
+      const id = productId.toString();
+      const combinedQuantity = (quantitiesByProduct.get(id) || 0) + quantity;
+      if (!Number.isSafeInteger(combinedQuantity)) {
+        return res.status(400).json({ message: 'Combined product quantity is outside the supported range.' });
+      }
+      quantitiesByProduct.set(id, combinedQuantity);
+    }
 
     const now = new Date();
+    const productIds = [...quantitiesByProduct.keys()].map((id) => new mongoose.Types.ObjectId(id));
+    const inventoryItems = await InventoryItem.find({ _id: { $in: productIds } })
+      .select('productName quantity')
+      .lean();
+    const inventoryById = new Map(inventoryItems.map((item) => [item._id.toString(), item]));
+    const missingProduct = [...quantitiesByProduct.keys()].find((id) => !inventoryById.has(id));
+    if (missingProduct) return res.status(404).json({ message: 'One or more selected products were not found.' });
+
     const activeBookings = await StockBooking.find({
-      product: item._id,
+      product: { $in: productIds },
       status: 'held',
       expiresAt: { $gt: now },
-    }).select('quantity').lean();
-    const reservedQuantity = activeBookings.reduce((total, booking) => total + booking.quantity, 0);
-    if (quantity > item.quantity - reservedQuantity) {
-      return res.status(400).json({
-        message: `Only ${Math.max(0, item.quantity - reservedQuantity)} units are available to book.`,
-      });
+    }).select('product quantity reservedQuantity').lean();
+    const reservedByProduct = new Map();
+    for (const booking of activeBookings) {
+      const id = booking.product.toString();
+      reservedByProduct.set(
+        id,
+        (reservedByProduct.get(id) || 0) + (booking.reservedQuantity ?? booking.quantity),
+      );
     }
 
     const expiresAt = new Date(now.getTime() + daysToHold * 24 * 60 * 60 * 1000);
@@ -69,16 +98,22 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ message: 'Days to hold is outside the supported range.' });
     }
 
-    const booking = await StockBooking.create({
-      customerName: customerName.trim(),
-      customerPhone: customerPhone.trim(),
-      product: item._id,
-      productName: item.productName,
-      quantity,
-      daysToHold,
-      expiresAt,
+    const bookingItems = [...quantitiesByProduct].map(([id, quantity]) => {
+      const item = inventoryById.get(id);
+      const availableQuantity = Math.max(0, item.quantity - (reservedByProduct.get(id) || 0));
+      return {
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        product: item._id,
+        productName: item.productName,
+        quantity,
+        reservedQuantity: Math.min(quantity, availableQuantity),
+        daysToHold,
+        expiresAt,
+      };
     });
-    return res.status(201).json(booking);
+    const bookings = await StockBooking.insertMany(bookingItems);
+    return res.status(201).json({ items: bookings, total: bookings.length });
   } catch (error) {
     return next(error);
   }
@@ -111,16 +146,25 @@ router.patch('/:id/release', async (req, res, next) => {
         : res.status(404).json({ message: 'Stock booking not found.' });
     }
 
+    const quantityToRelease = booking.reservedQuantity ?? booking.quantity;
+    if (quantityToRelease < 1) {
+      await StockBooking.updateOne(
+        { _id: booking._id, status: 'released' },
+        { $set: { status: 'held' }, $unset: { releasedAt: 1 } },
+      );
+      return res.status(409).json({ message: 'No stock was reserved for this booking yet.' });
+    }
+
     let item;
     try {
       item = await InventoryItem.findOneAndUpdate(
-        { _id: booking.product, quantity: { $gte: booking.quantity } },
+        { _id: booking.product, quantity: { $gte: quantityToRelease } },
         {
-          $inc: { quantity: -booking.quantity },
+          $inc: { quantity: -quantityToRelease },
           $push: {
             stockHistory: {
               type: 'adjustment',
-              change: -booking.quantity,
+              change: -quantityToRelease,
               changedAt: now,
             },
           },

@@ -11,7 +11,12 @@ export async function getActiveReservedQuantities(productIds, now = new Date()) 
         expiresAt: { $gt: now },
       },
     },
-    { $group: { _id: '$product', quantity: { $sum: '$quantity' } } },
+    {
+      $group: {
+        _id: '$product',
+        quantity: { $sum: { $ifNull: ['$reservedQuantity', '$quantity'] } },
+      },
+    },
   ]);
 
   return new Map(reservations.map(({ _id, quantity }) => [_id.toString(), quantity]));

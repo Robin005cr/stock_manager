@@ -28,9 +28,7 @@ export default function AppLayout() {
     <div className="app-shell">
       <aside className="app-sidebar" aria-label="Main navigation">
         <div className="app-brand">
-          <div className="app-brand-icon" aria-hidden="true">
-            SM
-          </div>
+          <img className="app-brand-logo" src="/business-logo.jpg" alt="Business logo" />
           <div>
             <div className="app-brand-text">Stock Manager</div>
             <div className="app-brand-sub">Inventory control</div>
