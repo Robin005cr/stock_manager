@@ -1,9 +1,40 @@
+import { useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import { usePinnedProducts } from '../state/PinnedProductsContext';
+import { exportResults } from '../utils/exportUtils';
 import './PinnedProducts.css';
 
 export default function PinnedProducts() {
   const { pinnedProducts, togglePinned } = usePinnedProducts();
+  const [exportError, setExportError] = useState('');
+
+  async function handleExport() {
+    setExportError('');
+    const now = new Date();
+    const pad = (value) => String(value).padStart(2, '0');
+    const defaultFileName = `pinned-products-export_${pad(now.getDate())}_${pad(now.getMonth() + 1)}_${now.getFullYear()}_${pad(now.getHours())}_${pad(now.getMinutes())}_${pad(now.getSeconds())}`;
+    const fileName = window.prompt('Enter a name for the PDF export:', defaultFileName);
+    if (fileName === null) return;
+    if (!fileName.trim()) {
+      setExportError('Enter a name for the export.');
+      return;
+    }
+
+    try {
+      await exportResults(pinnedProducts, 'pdf', fileName, {
+        headers: ['Measurement', 'Product Name', 'Company', 'Quantity'],
+        getRows: (products) => products.map((item) => [
+          item.measurement,
+          item.productName,
+          item.company,
+          item.quantity,
+        ]),
+        title: 'Pinned Products Export',
+      });
+    } catch (error) {
+      setExportError(error.message || 'Could not export pinned products.');
+    }
+  }
 
   return (
     <>
@@ -13,6 +44,21 @@ export default function PinnedProducts() {
       />
       <div className="app-content">
         <div className="page-card pinned-products-card">
+          <div className="pinned-export-row">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handleExport}
+              disabled={!pinnedProducts.length}
+            >
+              Export PDF
+            </button>
+          </div>
+          {exportError && (
+            <div className="alert-banner pinned-export-error" role="alert">
+              {exportError}
+            </div>
+          )}
           {pinnedProducts.length === 0 ? (
             <div className="empty-state pinned-empty-state">
               No pinned products yet. Pin a product from Search inventory to see it here.

@@ -34,17 +34,22 @@ async function buildExcel(results) {
   });
 }
 
-async function buildPdf(results) {
+async function buildPdf(results, options = {}) {
+  const {
+    headers: pdfHeaders = headers,
+    getRows: getPdfRows = getRows,
+    title = 'Inventory Export',
+  } = options;
   const [{ jsPDF }, { default: autoTable }] = await Promise.all([
     import('jspdf'),
     import('jspdf-autotable'),
   ]);
   const document = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
   document.setFontSize(16);
-  document.text('Inventory Export', 28, 30);
+  document.text(title, 28, 30);
   autoTable(document, {
-    head: [headers],
-    body: getRows(results).map((row) => row.map((value) => String(value ?? ''))),
+    head: [pdfHeaders],
+    body: getPdfRows(results).map((row) => row.map((value) => String(value ?? ''))),
     startY: 44,
     margin: { left: 28, right: 28 },
     styles: { fontSize: 8, cellPadding: 5, overflow: 'linebreak' },
@@ -64,7 +69,7 @@ function downloadFile(blob, filename) {
   window.setTimeout(() => URL.revokeObjectURL(fileUrl), 1000);
 }
 
-export async function exportResults(results, format, requestedFileName = 'inventory-export') {
+export async function exportResults(results, format, requestedFileName = 'inventory-export', pdfOptions) {
   if (results.length === 0) {
     alert('No results to export.');
     return;
@@ -82,6 +87,6 @@ export async function exportResults(results, format, requestedFileName = 'invent
   } else if (format === 'excel') {
     downloadFile(await buildExcel(results), `${fileNameBase}.xlsx`);
   } else if (format === 'pdf') {
-    downloadFile(await buildPdf(results), `${fileNameBase}.pdf`);
+    downloadFile(await buildPdf(results, pdfOptions), `${fileNameBase}.pdf`);
   }
 }

@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { clearSession, getSessionUser } from '../api/auth';
+import ReminderBell from './ReminderBell';
 import ThemeToggle from './ThemeToggle';
 
 const adminNavItems = [
@@ -17,7 +18,7 @@ const sharedNavItems = [
 export default function AppLayout() {
   const navigate = useNavigate();
   const user = getSessionUser();
-  const navItems = user?.role === 'admin' ? [...adminNavItems, ...sharedNavItems] : sharedNavItems;
+  const navItems = user?.role === 'admin' ? [...sharedNavItems, ...adminNavItems] : sharedNavItems;
 
   function handleLogout() {
     clearSession();
@@ -54,6 +55,7 @@ export default function AppLayout() {
       </aside>
       <div className="app-main">
         <div className="top-bar">
+          <ReminderBell />
           <ThemeToggle />
           <button type="button" className="logout-button" onClick={handleLogout}>
             Logout

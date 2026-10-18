@@ -5,7 +5,40 @@ import { InventoryItem } from '../models/InventoryItem.js';
 import { StockBooking } from '../models/StockBooking.js';
 
 const router = Router();
-router.use(requireAuth, requireRole('admin'));
+router.use(requireAuth);
+
+router.get('/reminders', async (_req, res, next) => {
+  try {
+    const now = new Date();
+    const bookings = await StockBooking.find({
+      status: 'held',
+      expiresAt: { $gt: now },
+    })
+      .select('customerName expiresAt')
+      .sort({ expiresAt: 1 })
+      .lean();
+    const remindersByCustomerAndExpiry = new Map();
+
+    bookings.forEach(({ _id, customerName, expiresAt }) => {
+      const key = `${customerName}\u0000${expiresAt.toISOString()}`;
+      if (!remindersByCustomerAndExpiry.has(key)) {
+        remindersByCustomerAndExpiry.set(key, {
+          id: _id.toString(),
+          customerName,
+          expiresAt,
+        });
+      }
+    });
+
+    res.json({
+      items: [...remindersByCustomerAndExpiry.values()],
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.use(requireRole('admin'));
 
 router.get('/', async (_req, res, next) => {
   try {

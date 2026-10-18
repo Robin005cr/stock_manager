@@ -3,6 +3,17 @@
   overflow: hidden;
 }
 
+.pinned-export-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pinned-export-error {
+  margin: 16px 20px 0;
+}
+
 .pinned-empty-state {
   margin: 24px;
 }

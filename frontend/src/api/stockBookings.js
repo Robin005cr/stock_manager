@@ -4,6 +4,10 @@ export function fetchStockBookings() {
   return apiRequest('/api/stock-bookings');
 }
 
+export function fetchStockBookingReminders() {
+  return apiRequest('/api/stock-bookings/reminders');
+}
+
 export function createStockBooking(payload) {
   return apiRequest('/api/stock-bookings', {
     method: 'POST',
