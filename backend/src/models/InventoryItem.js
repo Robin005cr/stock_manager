@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const stockHistoryEntrySchema = new mongoose.Schema(
   {
     type: { type: String, enum: ['load', 'adjustment', 'edit'], required: true },
+    reason: { type: String, enum: ['load', 'goods-return'] },
     change: { type: Number, required: true },
     quantityAfter: { type: Number },
     changedAt: { type: Date, required: true, default: Date.now },

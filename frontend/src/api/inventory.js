@@ -51,10 +51,10 @@ export function updateInventoryFromSpreadsheet(rows) {
   });
 }
 
-export function updateInventoryStock(id, direction, amount) {
+export function updateInventoryStock(id, direction, amount, reason) {
   return apiRequest(`/api/inventory/${id}/stock`, {
     method: 'PATCH',
-    body: JSON.stringify({ direction, amount }),
+    body: JSON.stringify({ direction, amount, ...(direction === 'increment' ? { reason } : {}) }),
   });
 }
 

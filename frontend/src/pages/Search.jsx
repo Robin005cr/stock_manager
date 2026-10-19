@@ -31,11 +31,11 @@ function FilterSelect({ id, label, value, onChange, options }) {
   );
 }
 
-function StockHistoryPhoto({ src, alt }) {
+function StockHistoryPhoto({ src, alt, className = '' }) {
   const [loadFailed, setLoadFailed] = useState(false);
 
   return (
-    <div className="stock-history-photo">
+    <div className={`stock-history-photo ${className}`.trim()}>
       {src && !loadFailed ? (
         <img src={src} alt={alt} onError={() => setLoadFailed(true)} />
       ) : (
@@ -57,6 +57,7 @@ export default function Search() {
   const [exportFormat, setExportFormat] = useState('csv');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [historyItem, setHistoryItem] = useState(null);
+  const [imageItem, setImageItem] = useState(null);
   const [stockAdjustment, setStockAdjustment] = useState(null);
   const [stockAdjustmentAmount, setStockAdjustmentAmount] = useState('1');
   const [stockAdjustmentError, setStockAdjustmentError] = useState('');
@@ -181,7 +182,7 @@ export default function Search() {
   }
 
   function openStockAdjustment(item, direction) {
-    setStockAdjustment({ item, direction });
+    setStockAdjustment({ item, direction, reason: 'load' });
     setStockAdjustmentAmount('1');
     setStockAdjustmentError('');
   }
@@ -196,12 +197,12 @@ export default function Search() {
       return;
     }
 
-    const { item, direction } = stockAdjustment;
+    const { item, direction, reason } = stockAdjustment;
     setStockAdjustmentError('');
     setUpdatingStock((previous) => ({ ...previous, [item.id]: true }));
 
     try {
-      const updatedItem = await updateInventoryStock(item.id, direction, amount);
+      const updatedItem = await updateInventoryStock(item.id, direction, amount, reason);
       updatePinnedProduct({ ...item, quantity: updatedItem.quantity });
       setStockAdjustment(null);
       await loadInventory(filters, false);
@@ -369,13 +370,13 @@ export default function Search() {
               <table className="data-table">
                 <thead>
                   <tr>
+                    <th>Image</th>
                     <th>Measurement</th>
                     <th>Product</th>
                     <th>Company</th>
                     <th>Category</th>
                     <th>Qty</th>
                     <th>Stock update</th>
-                    <th>Godown</th>
                     <th>History</th>
                     <th aria-label="Edit product">Edit</th>
                     <th aria-label="Pin product" />
@@ -384,6 +385,21 @@ export default function Search() {
                 <tbody>
                   {results.map((item) => (
                     <tr key={item.id ?? `${item.productName}-${item.godown}-${item.dateOfLoad}`}>
+                      <td className="search-image-cell">
+                        <button
+                          type="button"
+                          className="search-image-button"
+                          onClick={() => setImageItem(item)}
+                          aria-label={`View image for ${item.productName}`}
+                          title={`View image for ${item.productName}`}
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="3" y="4" width="18" height="16" rx="2" />
+                            <circle cx="8.5" cy="9" r="1.5" />
+                            <path d="m21 15-5-5L5 20" />
+                          </svg>
+                        </button>
+                      </td>
                       <td>{item.measurement}</td>
                       <td>
                         <strong>{item.productName}</strong>
@@ -417,7 +433,6 @@ export default function Search() {
                           </button>
                         </div>
                       </td>
-                      <td>{item.godown}</td>
                       <td className="search-history-cell">
                         <button
                           type="button"
@@ -471,6 +486,22 @@ export default function Search() {
             <p className="stock-adjust-summary">
               {stockAdjustment.item.productName} · Current stock: {stockAdjustment.item.quantity}
             </p>
+            {stockAdjustment.direction === 'increment' && (
+              <div className="field stock-adjust-field">
+                <label htmlFor="stock-adjustment-reason">Stock addition type</label>
+                <select
+                  className="ui-select"
+                  id="stock-adjustment-reason"
+                  value={stockAdjustment.reason}
+                  onChange={(event) =>
+                    setStockAdjustment((current) => ({ ...current, reason: event.target.value }))
+                  }
+                >
+                  <option value="load">Load</option>
+                  <option value="goods-return">Goods return</option>
+                </select>
+              </div>
+            )}
             <div className="field stock-adjust-field">
               <label htmlFor="stock-adjustment-amount">
                 Quantity to {stockAdjustment.direction === 'increment' ? 'add' : 'decrease'}
@@ -508,6 +539,40 @@ export default function Search() {
         </div>
       )}
 
+      {imageItem && (
+        <div
+          className="product-image-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setImageItem(null);
+          }}
+        >
+          <section className="product-image-card" role="dialog" aria-modal="true" aria-labelledby="product-image-title">
+            <div className="product-image-header">
+              <div>
+                <h3 id="product-image-title">Product image</h3>
+                <p>{imageItem.productName}</p>
+              </div>
+              <button
+                type="button"
+                className="stock-history-close"
+                onClick={() => setImageItem(null)}
+                aria-label="Close product image"
+                title="Close"
+              >
+                ×
+              </button>
+            </div>
+            <StockHistoryPhoto
+              key={imageItem.id ?? imageItem.productName}
+              className="product-image-preview"
+              src={imageItem.productImage}
+              alt={imageItem.productName}
+            />
+          </section>
+        </div>
+      )}
+
       {historyItem && (
         <div
           className="stock-history-overlay"
@@ -526,7 +591,11 @@ export default function Search() {
                 />
                 <div>
                   <h3 id="stock-history-title">Stock history</h3>
-                  <p>{historyItem.productName} · {historyItem.company}</p>
+                  <p className="stock-history-product-name">{historyItem.productName}</p>
+                  <p className="stock-history-godown">
+                    <span>Godown:</span> <strong>{historyItem.godown || 'Not recorded'}</strong>
+                  </p>
+                  <p className="stock-history-company">Company: {historyItem.company}</p>
                 </div>
               </div>
               <button
@@ -549,6 +618,10 @@ export default function Search() {
                   const eventDate = entry.changedAt ? new Date(entry.changedAt) : null;
                   const eventLabel = entry.type === 'load'
                     ? 'Initial stock loaded'
+                    : entry.reason === 'goods-return'
+                      ? 'Goods returned'
+                      : entry.reason === 'load'
+                        ? 'Stock loaded'
                     : entry.type === 'edit'
                       ? 'Stock quantity edited'
                       : entry.change > 0

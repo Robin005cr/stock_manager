@@ -212,8 +212,42 @@
 
 .search-edit-cell,
 .search-stock-cell,
-.search-history-cell {
+.search-history-cell,
+.search-image-cell {
   white-space: nowrap;
+}
+
+.search-image-button {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-primary-hover);
+  cursor: pointer;
+}
+
+.search-image-button:hover {
+  background: var(--color-accent-surface);
+  border-color: var(--color-accent-border);
+}
+
+.search-image-button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.search-image-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
 }
 
 .search-history-button {
@@ -313,7 +347,8 @@
 }
 
 .stock-adjust-overlay,
-.stock-history-overlay {
+.stock-history-overlay,
+.product-image-overlay {
   position: fixed;
   inset: 0;
   display: flex;
@@ -324,7 +359,8 @@
 }
 
 .stock-adjust-card,
-.stock-history-card {
+.stock-history-card,
+.product-image-card {
   width: min(420px, calc(100vw - 32px));
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -350,6 +386,32 @@
   width: min(560px, calc(100vw - 32px));
   max-height: min(680px, calc(100vh - 32px));
   overflow-y: auto;
+}
+
+.product-image-card {
+  width: min(900px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+.product-image-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.product-image-header h3 {
+  margin: 0 0 4px;
+  color: var(--color-text);
+  font-size: 22px;
+}
+
+.product-image-header p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
 }
 
 .stock-history-header {
@@ -397,10 +459,37 @@
   font-size: 11px;
 }
 
+.stock-history-photo.product-image-preview {
+  width: 100%;
+  height: min(68vh, 720px);
+  flex: none;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.product-image-preview img {
+  object-fit: contain;
+}
+
 .stock-history-header p {
   margin: 0;
   color: var(--color-text-muted);
   font-size: 13px;
+}
+
+.stock-history-header .stock-history-product-name {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.stock-history-header .stock-history-godown {
+  margin-top: 4px;
+}
+
+.stock-history-godown span,
+.stock-history-company {
+  color: var(--color-text-muted);
 }
 
 .stock-history-close {

@@ -403,6 +403,10 @@ router.patch('/:id/stock', requireRole('admin'), async (req, res, next) => {
     if (!Number.isSafeInteger(amount) || amount <= 0) {
       return res.status(400).json({ message: 'Quantity must be a positive whole number.' });
     }
+    const reason = direction === 'increment' ? req.body.reason || 'load' : undefined;
+    if (reason !== undefined && !['load', 'goods-return'].includes(reason)) {
+      return res.status(400).json({ message: 'Stock addition type must be load or goods-return.' });
+    }
 
     const isDecrement = direction === 'decrement';
     const existingItem = await InventoryItem.findById(req.params.id).select('quantity');
@@ -421,6 +425,7 @@ router.patch('/:id/stock', requireRole('admin'), async (req, res, next) => {
         $push: {
           stockHistory: {
             type: 'adjustment',
+            ...(reason ? { reason } : {}),
             change: isDecrement ? -amount : amount,
             changedAt: new Date(),
           },
