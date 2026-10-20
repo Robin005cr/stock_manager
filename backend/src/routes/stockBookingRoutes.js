@@ -7,6 +7,10 @@ import { StockBooking } from '../models/StockBooking.js';
 const router = Router();
 router.use(requireAuth);
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 router.get('/reminders', async (_req, res, next) => {
   try {
     const now = new Date();
@@ -73,6 +77,9 @@ router.post('/', async (req, res, next) => {
     if (customerName.trim().length > 120 || customerPhone.trim().length > 40) {
       return res.status(400).json({ message: 'Customer name or phone number is too long.' });
     }
+    if (customerPhone.replace(/\D/g, '').length < 10) {
+      return res.status(400).json({ message: 'Customer phone number must contain at least 10 digits.' });
+    }
     if (req.body?.items !== undefined && !Array.isArray(req.body.items)) {
       return res.status(400).json({ message: 'Booking items must be provided as a list.' });
     }
@@ -84,6 +91,18 @@ router.post('/', async (req, res, next) => {
     }
     if (!Number.isSafeInteger(daysToHold) || daysToHold < 1 || daysToHold > 60) {
       return res.status(400).json({ message: 'Days to hold must be a whole number from 1 to 60.' });
+    }
+
+    const normalizedCustomerName = customerName.trim().replace(/\s+/g, ' ');
+    const customerNamePattern = normalizedCustomerName
+      .split(' ')
+      .map(escapeRegExp)
+      .join('\\s+');
+    const duplicateCustomer = await StockBooking.exists({
+      customerName: { $regex: `^${customerNamePattern}$`, $options: 'i' },
+    });
+    if (duplicateCustomer) {
+      return res.status(409).json({ message: 'A stock booking already exists for this customer name.' });
     }
 
     const quantitiesByProduct = new Map();

@@ -24,6 +24,58 @@
   align-items: flex-end;
 }
 
+.stock-booking-product-field {
+  position: relative;
+}
+
+.stock-booking-product-suggestions {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  max-height: 240px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  list-style: none;
+}
+
+.stock-booking-product-suggestions button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.stock-booking-product-suggestions button:hover,
+.stock-booking-product-suggestions button:focus-visible {
+  background: var(--color-surface-muted);
+}
+
+.stock-booking-product-suggestions small,
+.stock-booking-product-no-results {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.stock-booking-product-no-results {
+  padding: 9px 10px;
+}
+
 .stock-booking-cart {
   grid-column: 1 / -1;
   padding: 16px;
@@ -161,6 +213,65 @@
   font-size: 13px;
 }
 
+.stock-booking-group-row td {
+  padding: 0;
+  background: var(--color-surface-muted);
+}
+
+.stock-booking-group-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px 0 0;
+}
+
+.stock-booking-group-toggle {
+  display: flex;
+  flex: 1;
+  min-height: 56px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 0 12px 16px;
+  border: 0;
+  color: var(--color-text);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.stock-booking-group-toggle:hover,
+.stock-booking-group-toggle:focus-visible {
+  background: var(--color-surface);
+}
+
+.stock-booking-export {
+  flex-shrink: 0;
+  padding: 7px 12px;
+}
+
+.stock-booking-group-customer {
+  display: flex;
+  min-width: 180px;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stock-booking-group-customer span {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.stock-booking-group-action {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.stock-booking-item-row td:first-child {
+  padding-left: 28px;
+}
+
 .stock-booking-status {
   text-transform: capitalize;
   font-weight: 600;
@@ -189,6 +300,20 @@
 
   .stock-booking-heading {
     align-items: flex-start;
+  }
+
+  .stock-booking-group-summary {
+    gap: 8px;
+    padding-right: 8px;
+  }
+
+  .stock-booking-group-toggle {
+    gap: 10px;
+    padding-left: 10px;
+  }
+
+  .stock-booking-export {
+    padding: 7px 9px;
   }
 
   .stock-booking-table {

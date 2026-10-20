@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import { fetchInventory } from '../api/inventory';
 import { createStockBooking, fetchStockBookings, releaseStockBooking } from '../api/stockBookings';
+import { exportResults } from '../utils/exportUtils';
 import './StockBooking.css';
 
 const initialForm = {
@@ -22,13 +23,21 @@ function getBookingStatus(booking) {
   return booking.status;
 }
 
+function normalizeCustomerName(name) {
+  return name.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
 export default function StockBooking() {
   const [form, setForm] = useState(initialForm);
   const [bookingItems, setBookingItems] = useState([]);
   const [products, setProducts] = useState([]);
+  const [productSearch, setProductSearch] = useState('');
+  const [showProductSuggestions, setShowProductSuggestions] = useState(false);
   const [bookings, setBookings] = useState([]);
+  const [expandedBookingGroups, setExpandedBookingGroups] = useState(() => new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [exportingCustomerId, setExportingCustomerId] = useState('');
   const [releasingId, setReleasingId] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -81,6 +90,28 @@ export default function StockBooking() {
     });
     return totals;
   }, [bookingItems]);
+
+  const bookingGroups = useMemo(() => {
+    const groups = new Map();
+    bookings.forEach((booking) => {
+      const key = [
+        normalizeCustomerName(booking.customerName),
+        booking.customerPhone,
+        booking.expiresAt,
+        booking.daysToHold,
+      ].join('\u0000');
+      if (!groups.has(key)) {
+        groups.set(key, { id: key, customerName: booking.customerName, customerPhone: booking.customerPhone, items: [] });
+      }
+      groups.get(key).items.push(booking);
+    });
+    return [...groups.values()];
+  }, [bookings]);
+
+  const filteredProducts = useMemo(() => {
+    const search = productSearch.trim().toLowerCase();
+    return products.filter((product) => product.productName.toLowerCase().includes(search));
+  }, [productSearch, products]);
 
   function updateForm(name, value) {
     setForm((previous) => ({ ...previous, [name]: value }));
@@ -135,6 +166,16 @@ export default function StockBooking() {
       }];
     });
     setForm((previous) => ({ ...previous, productId: '', quantity: '' }));
+    setProductSearch('');
+    setShowProductSuggestions(false);
+  }
+
+  function selectProduct(product) {
+    setForm((previous) => ({ ...previous, productId: product.id }));
+    setProductSearch(product.productName);
+    setShowProductSuggestions(false);
+    setError('');
+    setNotice('');
   }
 
   function handleRemoveItem(productId) {
@@ -143,10 +184,62 @@ export default function StockBooking() {
     setNotice('');
   }
 
+  function toggleBookingGroup(groupId) {
+    setExpandedBookingGroups((previous) => {
+      const next = new Set(previous);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
+  }
+
+  async function handleExportCustomer(group) {
+    setError('');
+    setNotice('');
+    setExportingCustomerId(group.id);
+    try {
+      const date = new Date().toISOString().slice(0, 10);
+      await exportResults(
+        group.items,
+        'pdf',
+        `stock-booking-${group.customerName}-${date}`,
+        {
+          headers: ['Customer', 'Phone', 'Product', 'Quantity', 'Reserved', 'To be booked', 'Days held', 'Expires', 'Status'],
+          getRows: (items) => items.map((booking) => [
+            booking.customerName,
+            booking.customerPhone,
+            booking.productName,
+            booking.quantity,
+            booking.reservedQuantity ?? booking.quantity,
+            booking.deficientQuantity ?? booking.quantity - (booking.reservedQuantity ?? booking.quantity),
+            booking.daysToHold,
+            displayDate(booking.expiresAt),
+            getBookingStatus(booking),
+          ]),
+          title: `Stock Booking - ${group.customerName}`,
+        },
+      );
+      setNotice(`PDF exported for ${group.customerName}.`);
+    } catch (exportError) {
+      setError(exportError.message || `Could not export the booking for ${group.customerName}.`);
+    } finally {
+      setExportingCustomerId('');
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError('');
     setNotice('');
+    if (form.customerPhone.replace(/\D/g, '').length < 10) {
+      setError('Customer phone number must contain at least 10 digits.');
+      return;
+    }
+    const normalizedCustomerName = normalizeCustomerName(form.customerName);
+    if (bookings.some((booking) => normalizeCustomerName(booking.customerName) === normalizedCustomerName)) {
+      setError('A stock booking already exists for this customer name.');
+      return;
+    }
     const daysToHold = Number(form.daysToHold);
     if (!Number.isSafeInteger(daysToHold) || daysToHold < 1 || daysToHold > 60) {
       setError('Days to hold must be a whole number from 1 to 60.');
@@ -233,26 +326,57 @@ export default function StockBooking() {
                 onChange={(event) => updateForm('customerPhone', event.target.value)}
                 maxLength={40}
                 required
+                aria-describedby="booking-customerPhone-hint"
               />
+              <small id="booking-customerPhone-hint">Enter at least 10 digits; spaces and separators are allowed.</small>
             </div>
-            <div className="field">
+            <div className="field stock-booking-product-field">
               <label htmlFor="booking-product">Product name</label>
-              <select
-                className="ui-select"
+              <input
+                className="ui-input"
                 id="booking-product"
-                value={form.productId}
-                onChange={(event) => updateForm('productId', event.target.value)}
-              >
-                <option value="">Select a product</option>
-                {products.map((product) => (
-                  <option
-                    key={product.id}
-                    value={product.id}
-                  >
-                    {product.productName} ({availableQuantity(product)} available)
-                  </option>
-                ))}
-              </select>
+                type="search"
+                value={productSearch}
+                onFocus={() => setShowProductSuggestions(true)}
+                onChange={(event) => {
+                  setProductSearch(event.target.value);
+                  setForm((previous) => ({ ...previous, productId: '' }));
+                  setShowProductSuggestions(true);
+                  setError('');
+                  setNotice('');
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') setShowProductSuggestions(false);
+                }}
+                placeholder="Type to search products"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-haspopup="listbox"
+                aria-expanded={showProductSuggestions}
+                aria-controls="booking-product-suggestions"
+                autoComplete="off"
+              />
+              {showProductSuggestions && (
+                <ul className="stock-booking-product-suggestions" id="booking-product-suggestions" role="listbox">
+                  {filteredProducts.length ? filteredProducts.map((product) => (
+                    <li key={product.id}>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={form.productId === product.id}
+                        onClick={() => selectProduct(product)}
+                      >
+                        <span>{product.productName}</span>
+                        <small>{availableQuantity(product)} available</small>
+                      </button>
+                    </li>
+                  )) : (
+                    <li className="stock-booking-product-no-results" role="option" aria-selected="false">
+                      No matching products
+                    </li>
+                  )}
+                </ul>
+              )}
             </div>
             <div className="field">
               <label htmlFor="booking-quantity">Quantity</label>
@@ -346,7 +470,7 @@ export default function StockBooking() {
               <h2>Bookings</h2>
               <p>Active bookings reserve stock until their hold period ends.</p>
             </div>
-            <span>{bookings.length} total</span>
+            <span>{bookingGroups.length} customer booking{bookingGroups.length === 1 ? '' : 's'}</span>
           </div>
           <div className="stock-booking-table-wrap">
             <table className="stock-booking-table">
@@ -369,37 +493,73 @@ export default function StockBooking() {
                   <tr><td colSpan="10" className="stock-booking-empty">Loading bookings…</td></tr>
                 ) : bookings.length === 0 ? (
                   <tr><td colSpan="10" className="stock-booking-empty">No stock bookings yet.</td></tr>
-                ) : bookings.map((booking) => {
-                  const status = getBookingStatus(booking);
+                ) : bookingGroups.map((group) => {
+                  const isExpanded = expandedBookingGroups.has(group.id);
                   return (
-                    <tr key={booking.id}>
-                      <td>{booking.customerName}</td>
-                      <td>{booking.customerPhone}</td>
-                      <td>{booking.productName}</td>
-                      <td>{booking.quantity}</td>
-                      <td>{booking.reservedQuantity ?? booking.quantity}</td>
-                      <td
-                        className={(booking.deficientQuantity ?? 0) > 0 ? 'stock-booking-deficit' : ''}
-                        title="Deficient quantity not currently available in stock"
-                      >
-                        {booking.deficientQuantity ?? 0}
-                      </td>
-                      <td>{booking.daysToHold}</td>
-                      <td>{displayDate(booking.expiresAt)}</td>
-                      <td><span className={`stock-booking-status ${status}`}>{status}</span></td>
-                      <td>
-                        {status === 'held' && (booking.reservedQuantity ?? booking.quantity) > 0 ? (
-                          <button
-                            type="button"
-                            className="btn btn-primary stock-booking-release"
-                            onClick={() => handleRelease(booking)}
-                            disabled={Boolean(releasingId)}
-                          >
-                            {releasingId === booking.id ? 'Releasing…' : 'Release'}
-                          </button>
-                        ) : '—'}
-                      </td>
-                    </tr>
+                    <Fragment key={group.id}>
+                      <tr className="stock-booking-group-row">
+                        <td colSpan="10">
+                          <div className="stock-booking-group-summary">
+                            <button
+                              type="button"
+                              className="stock-booking-group-toggle"
+                              onClick={() => toggleBookingGroup(group.id)}
+                              aria-expanded={isExpanded}
+                            >
+                              <span className="stock-booking-group-customer">
+                                <strong>{group.customerName}</strong>
+                                <span>{group.customerPhone}</span>
+                              </span>
+                              <span>{group.items.length} product{group.items.length === 1 ? '' : 's'} booked</span>
+                              <span className="stock-booking-group-action">
+                                {isExpanded ? 'Hide products' : 'View products'} <span aria-hidden="true">{isExpanded ? '−' : '+'}</span>
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary stock-booking-export"
+                              onClick={() => handleExportCustomer(group)}
+                              disabled={Boolean(exportingCustomerId)}
+                            >
+                              {exportingCustomerId === group.id ? 'Exporting…' : 'Export PDF'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {isExpanded && group.items.map((booking) => {
+                        const status = getBookingStatus(booking);
+                        return (
+                          <tr key={booking.id} className="stock-booking-item-row">
+                            <td>{booking.customerName}</td>
+                            <td>{booking.customerPhone}</td>
+                            <td>{booking.productName}</td>
+                            <td>{booking.quantity}</td>
+                            <td>{booking.reservedQuantity ?? booking.quantity}</td>
+                            <td
+                              className={(booking.deficientQuantity ?? 0) > 0 ? 'stock-booking-deficit' : ''}
+                              title="Deficient quantity not currently available in stock"
+                            >
+                              {booking.deficientQuantity ?? 0}
+                            </td>
+                            <td>{booking.daysToHold}</td>
+                            <td>{displayDate(booking.expiresAt)}</td>
+                            <td><span className={`stock-booking-status ${status}`}>{status}</span></td>
+                            <td>
+                              {status === 'held' && (booking.reservedQuantity ?? booking.quantity) > 0 ? (
+                                <button
+                                  type="button"
+                                  className="btn btn-primary stock-booking-release"
+                                  onClick={() => handleRelease(booking)}
+                                  disabled={Boolean(releasingId)}
+                                >
+                                  {releasingId === booking.id ? 'Releasing…' : 'Release'}
+                                </button>
+                              ) : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </Fragment>
                   );
                 })}
               </tbody>
